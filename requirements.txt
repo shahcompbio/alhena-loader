@@ -85,7 +85,6 @@ pathlib2==2.3.2
 pbr==3.1.1
 pexpect==4.6.0
 pickleshare==0.7.5
-pprint==0.1
 prometheus-client==0.4.2
 prompt-toolkit==1.0.15
 ptyprocess==0.6.0
