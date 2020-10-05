@@ -87,8 +87,7 @@ def clean_analysis(dashboard_id, host, port):
         logger.info(f"Deleting {data_type} records")
         delete_index(f"{dashboard_id.lower()}_{data_type}", host=host, port=port)
 
-
-    logging.info("DELETE DASHBOARD_ENTRY")
+    logger.info("DELETE DASHBOARD_ENTRY")
     delete_records(constants.DASHBOARD_ENTRY_INDEX, 
                    dashboard_id, host=host, port=port)
 
