@@ -105,14 +105,14 @@ requests-oauthlib==1.2.0
 requests-toolbelt==0.9.1
 saltant-py==0.4.0
 scandir==1.9.0
--e git+https://github.com/shahcompbio/scgenome.git@58a3f9cf7edfc7db93762a94ead8aac2bbdfc43b#egg=scgenome
+-e git+https://github.com/shahcompbio/scgenome.git#egg=scgenome
 scikit-learn==0.20.0
 scipy==1.1.0
 seaborn==0.9.0
 Send2Trash==1.5.0
 simplegeneric==0.8.1
 singledispatch==3.4.0.3
--e git+https://github.com/shahcompbio/sisyphus.git@3bc72bb29685c9bbed69a5d454f5a75bfe46e7e9#egg=sisyphus
+-e git+https://github.com/shahcompbio/sisyphus.git#egg=sisyphus
 six==1.11.0
 subprocess32==3.5.3
 terminado==0.8.1
@@ -127,6 +127,6 @@ urllib3==1.24.1
 wcwidth==0.1.7
 webencodings==0.5.1
 websocket-client==0.56.0
--e git+https://bitbucket.org/dranew/wgs_analysis.git@b736ac0de7d10a34ce2ffc8f1e3b86c865239258#egg=wgs_analysis
+-e git+https://bitbucket.org/dranew/wgs_analysis.git#egg=wgs_analysis
 widgetsnbextension==3.4.2
 wrapt==1.11.1
