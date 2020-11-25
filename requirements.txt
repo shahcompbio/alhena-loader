@@ -1,4 +1,4 @@
- adal==1.2.1
+adal==1.2.1
 adjustText==0.7.3
 appnope==0.1.0
 asn1crypto==0.24.0
@@ -103,6 +103,7 @@ qtconsole==4.4.2
 requests==2.20.1
 requests-oauthlib==1.2.0
 requests-toolbelt==0.9.1
+response
 saltant-py==0.4.0
 scandir==1.9.0
 -e git+https://github.com/shahcompbio/scgenome.git@58a3f9cf7edfc7db93762a94ead8aac2bbdfc43b#egg=scgenome
