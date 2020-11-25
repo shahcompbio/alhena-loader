@@ -10,6 +10,7 @@ from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as
 
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"
 
+
 @click.group()
 @click.option('--host', default='localhost', help='Hostname for Elasticsearch server')
 @click.option('--port', default=9200, help='Port for Elasticsearch server')
@@ -39,6 +40,7 @@ def main(ctx, host, port, debug):
 @click.argument('data_directory')
 @click.pass_context
 @click.option('--id', help="ID of dashboard", required=True)
+@click.optiono('--project', help="Project name you want to ")
 @click.option('--reload', is_flag=True, help="Force reload this dashboard")
 def load_analysis(ctx, data_directory, id, reload):
     es_host = ctx.obj['host']
@@ -47,33 +49,32 @@ def load_analysis(ctx, data_directory, id, reload):
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
 
-    assert _is_loaded(dashboard_id, es_host, es_port), f'Dashboard with ID {dashboard_id} already loaded. To reload, add --reload to command'
-    
-    _load_analysis( id, data_directory, es_host, es_port)
+    assert _is_loaded(dashboard_id, es_host,
+                      es_port), f'Dashboard with ID {dashboard_id} already loaded. To reload, add --reload to command'
+
+    _load_analysis(id, data_directory, es_host, es_port)
 
 
 @main.command()
 @click.argument('data_directory')
 @click.pass_context
 @click.option('--id', help="ID of dashboard", required=True)
-@click.option('--sample_id')
-@click.option('--library_id')
-@click.option('--description')
 @click.option('--download', is_flag=True, help="Download data")
 @click.option('--reload', is_flag=True, help="Force reload this dashboard")
-def load_analysis_shah(ctx, data_directory, id, sample_id, library_id, description, download, reload):
+def load_analysis_shah(ctx, data_directory, id, download, reload):
     es_host = ctx.obj['host']
     es_port = ctx.obj["port"]
     if download:
-        data_directory = _download_analysis(id, data_directory, sample_id, library_id, description)
+        data_directory = _download_analysis(
+            id, data_directory)
 
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
 
-    assert _is_loaded(id, es_host, es_port), f'{id} already loaded. To reload, add --reload to command'
+    assert _is_loaded(
+        id, es_host, es_port), f'{id} already loaded. To reload, add --reload to command'
 
-    _load_analysis( id, data_directory, es_host, es_port)
-
+    _load_analysis(id, data_directory, es_host, es_port)
 
 
 @main.command()
@@ -84,12 +85,10 @@ def clean_analysis(ctx, dashboard_id):
                     host=ctx.obj['host'], port=ctx.obj['port'])
 
 
-
 @main.command()
 @click.pass_context
 def initialize_db(ctx):
     _initialize_es_indices(host=ctx.obj['host'], port=ctx.obj['port'])
-
 
 
 def start():
