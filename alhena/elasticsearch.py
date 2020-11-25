@@ -46,6 +46,27 @@ def initialize_es(host, port):
     return es
 
 
+def initialize_indices(host, port):
+    es = initialize_es(host, port)
+
+    logger.info('INITIALIZING ELASTICSEARCH')
+
+    logger.info('Creating analyses')
+    es.indices.create(index=constants.DASHBOARD_ENTRY_INDEX, mapping=DEFAULT_MAPPING)
+
+    logger.info('Creating default DLP dashboard')
+    es.security.putRole({
+        name:  "DLP_dashboardReader",
+        body: {
+            indices: [{
+                names: [constants.DASHBOARD_ENTRY_INDEX],
+                privileges: ["read"]
+            }]
+        }
+    })
+
+
+####################
 
 def load_dashboard_record(record, dashboard_id, host, port):
     load_record(record, dashboard_id, constants.DASHBOARD_ENTRY_INDEX, host, port)

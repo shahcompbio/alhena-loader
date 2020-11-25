@@ -5,7 +5,7 @@ import os
 
 from alhena.alhena_loader import load_analysis as _load_analysis
 from alhena.alhena_data import download_analysis as _download_analysis
-from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded
+from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded, initialize_indices as _initialize_es_indices
 
 
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"
@@ -82,6 +82,13 @@ def load_analysis_shah(ctx, data_directory, id, sample_id, library_id, descripti
 def clean_analysis(ctx, dashboard_id):
     _clean_analysis(dashboard_id,
                     host=ctx.obj['host'], port=ctx.obj['port'])
+
+
+
+@main.command()
+@click.pass_context
+def initialize_db(ctx):
+    _initialize_es_indices(host=ctx.obj['host'], port=ctx.obj['port'])
 
 
 
