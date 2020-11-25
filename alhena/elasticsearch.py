@@ -52,7 +52,7 @@ def initialize_indices(host, port):
     logger.info('INITIALIZING ELASTICSEARCH')
 
     logger.info('Creating analyses')
-    es.indices.create(index=constants.DASHBOARD_ENTRY_INDEX, mapping=DEFAULT_MAPPING)
+    es.indices.create(index=constants.DASHBOARD_ENTRY_INDEX, body=DEFAULT_MAPPING)
 
     logger.info('Creating default DLP dashboard')
     es.security.putRole({
