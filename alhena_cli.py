@@ -5,7 +5,7 @@ import os
 
 from alhena.alhena_loader import load_analysis as _load_analysis
 from alhena.alhena_data import download_analysis as _download_analysis
-from alhena.elasticsearch import clean_analysis as _clean_analysis
+from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded
 
 
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"
@@ -47,6 +47,8 @@ def load_analysis(ctx, data_directory, id, reload):
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
 
+    assert _is_loaded(dashboard_id, es_host, es_port), f'Dashboard with ID {dashboard_id} already loaded. To reload, add --reload to command'
+    
     _load_analysis( id, data_directory, es_host, es_port)
 
 
@@ -67,6 +69,8 @@ def load_analysis_shah(ctx, data_directory, id, sample_id, library_id, descripti
 
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
+
+    assert _is_loaded(id, es_host, es_port), f'{id} already loaded. To reload, add --reload to command'
 
     _load_analysis( id, data_directory, es_host, es_port)
 

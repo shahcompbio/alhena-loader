@@ -107,6 +107,21 @@ def delete_records(index, filter_value, host="localhost", port=9200):
         es.delete_by_query(index=index, body=query, refresh=True)
 
 
+
+
+#####
+
+def is_loaded(dashboard_id, host, port):
+    es = initialize_es(host, port)
+
+    query = fill_base_query(dashboard_id)
+    count = es.count(body=query, index=constants.DASHBOARD_ENTRY_INDEX)
+
+    return count["count"] == 1
+
+
+#######
+
 def fill_base_query(value):
     return {
         "query": {
@@ -119,4 +134,5 @@ def fill_base_query(value):
             }
         }
     }
+
 
