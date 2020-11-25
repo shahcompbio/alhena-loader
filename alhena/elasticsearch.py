@@ -56,9 +56,9 @@ def initialize_indices(host, port):
 
     logger.info('Creating default DLP dashboard')
     es.security.put_role(name="DLP_dashboardReader", body={
-        indices: [{
-            names: [constants.DASHBOARD_ENTRY_INDEX],
-            privileges: ["read"]
+        'indices': [{
+            'names': [constants.DASHBOARD_ENTRY_INDEX],
+            'privileges': ["read"]
         }]
     }
     )
