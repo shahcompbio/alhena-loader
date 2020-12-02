@@ -4,6 +4,7 @@ import os
 import json
 import logging
 import response
+import requests
 logger = logging.getLogger('alhena_loading')
 
 
