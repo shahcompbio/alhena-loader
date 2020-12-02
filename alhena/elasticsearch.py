@@ -140,7 +140,38 @@ def is_loaded(dashboard_id, host, port):
     return count["count"] == 1
 
 
+def is_project_exist(project, host, port):
+    es = initialize_es(host, port)
+
+    dashboard_name = f'{project}_dashboardReader'
+
+    result = es.security.get_role(name=dashboard_name)
+
+    return dashboard_name in result
+
+
+def add_dashboard_to_projects(dashboard_id, projects, host, port):
+    es = initialize_es(host, port)
+
+    for project in projects:
+
+        logger.info(f'Adding {dashboard_id} to {project} list')
+        project_role_name = f'{project}_dashboardReader'
+
+        project_role = es.security.get_role(name=project_role_name)
+        project_indices = list(
+            project_role[project_role_name]["indices"]).append(dashboard_id)
+
+        es.security.put_role(name=project_role_name, body={
+            'indices': [{
+                'names': project_indices,
+                'privileges': ["read"]
+            }]
+        }
+        )
+
 #######
+
 
 def fill_base_query(value):
     return {

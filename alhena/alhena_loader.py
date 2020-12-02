@@ -8,18 +8,21 @@ import scipy.stats
 import pandas as pd
 import numpy as np
 import alhena.constants as constants
-from alhena.elasticsearch import initialize_es, load_dashboard_record, load_records as _load_records
+from alhena.elasticsearch import initialize_es, load_dashboard_record, load_records as _load_records, add_dashboard_to_projects
 from scgenome.loaders.qc import load_qc_data
 
 logger = logging.getLogger('alhena_loading')
 
 chr_prefixed = {str(a): '0' + str(a) for a in range(1, 10)}
 
-def load_analysis(dashboard_id, directory, host, port):
+
+def load_analysis(dashboard_id, projects, directory, host, port):
     logger.info("====================== " + dashboard_id)
     load_data(directory, dashboard_id, host, port)
     load_dashboard_entry(directory, dashboard_id, host, port)
+    add_dashboard_to_projects(dashboard_id, projects, host, port)
     logger.info("Done")
+
 
 def load_data(directory, dashboard_id, host, port):
     logger.info("LOADING DATA: " + dashboard_id)
@@ -42,6 +45,7 @@ def load_data(directory, dashboard_id, host, port):
 
         logger.info(f"dataframe for {index_name} has shape {data.shape}")
         load_records(data, index_name, host, port)
+
 
 def get_qc_data(hmmcopy_data):
     data = hmmcopy_data['annotation_metrics']
@@ -82,14 +86,12 @@ def create_chrom_number(chromosomes):
     return chrom_number
 
 
-
 GET_DATA = {
     f"qc": get_qc_data,
     f"segs": get_segs_data,
     f"bins": get_bins_data,
     f"gc_bias": get_gc_bias_data,
 }
-
 
 
 def load_records(data, index_name, host, port):
@@ -111,11 +113,12 @@ def load_records(data, index_name, host, port):
 
         _load_records(records, index_name, host, port)
         num_records += batch_data.shape[0]
-        logger.info(f"Loading {len(records)} records. Total: {num_records} / {total_records} ({round(num_records * 100 / total_records, 2)}%)")
-
+        logger.info(
+            f"Loading {len(records)} records. Total: {num_records} / {total_records} ({round(num_records * 100 / total_records, 2)}%)")
 
     if total_records != num_records:
-        raise ValueError(f'mismatch in {num_cells} cells loaded to {total_cells} total cells')
+        raise ValueError(
+            f'mismatch in {num_cells} cells loaded to {total_cells} total cells')
 
 
 def clean_fields(data):
@@ -136,6 +139,7 @@ def clean_nans(record):
         if np.isnan(record[field]):
             del record[field]
 
+
 def load_dashboard_entry(directory, dashboard_id, host, port):
     logger.info("LOADING DASHBOARD ENTRY: " + dashboard_id)
 
@@ -144,16 +148,14 @@ def load_dashboard_entry(directory, dashboard_id, host, port):
     with open(metadata_filename) as metadata_file:
         metadata = json.load(metadata_file)
 
-
     for key in ["sample_id", "library_id", "description"]:
         assert key in metadata.keys(), f"Missing {key} in metadata.json"
 
     record = {
-            "sample_id": metadata["sample_id"],
-            "library_id": metadata["library_id"],
-            "jira_id": dashboard_id,
-            "description": metadata["description"]
+        "sample_id": metadata["sample_id"],
+        "library_id": metadata["library_id"],
+        "jira_id": dashboard_id,
+        "description": metadata["description"]
     }
 
     load_dashboard_record(record, dashboard_id, host, port)
-
