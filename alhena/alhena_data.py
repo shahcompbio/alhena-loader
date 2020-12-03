@@ -32,7 +32,7 @@ def create_analysis_metadata(dashboard_id, directory):
     password = os.environ['COLOSSUS_API_PASSWORD']
 
     response = requests.get(
-        constants.COLOSSUS_BASE_URL + '/analysis_information/?analysis_jira_ticket=' + jira_id, auth=(user, password))
+        constants.COLOSSUS_BASE_URL + '/analysis_information/?analysis_jira_ticket=' + dashboard_id, auth=(user, password))
 
     data = response.json()['results'][0]
     metadata = get_metadata_record(data, dashboard_id)
