@@ -71,9 +71,6 @@ def load_analysis(ctx, data_directory, id, projects, reload):
 def load_analysis_shah(ctx, data_directory, id, projects, download, reload):
     es_host = ctx.obj['host']
     es_port = ctx.obj["port"]
-    if download:
-        data_directory = _download_analysis(
-            id, data_directory)
 
     assert reload or not _is_loaded(
         id, es_host, es_port), f'{id} already loaded. To reload, add --reload to command'
@@ -83,6 +80,10 @@ def load_analysis_shah(ctx, data_directory, id, projects, download, reload):
 
     assert len(
         nonexistant_projects) == 0, f'Projects do not exist: {nonexistant_projects} '
+
+    if download:
+        data_directory = _download_analysis(
+            id, data_directory)
 
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
