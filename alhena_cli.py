@@ -46,15 +46,17 @@ def load_analysis(ctx, data_directory, id, projects, reload):
     es_host = ctx.obj['host']
     es_port = ctx.obj["port"]
 
+    assert reload or not _is_loaded(
+        id, es_host, es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
+
+    nonexistant_projects = [project for project in projects if not _is_project_exist(
+        project, es_host, es_port)]
+
+    assert len(
+        nonexistant_projects) == 0, f'Projects do not exist: {nonexistant_projects} '
+
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
-
-    assert not _is_loaded(id, es_host,
-                          es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
-
-    for project in projects:
-        assert _is_project_exist(
-            project, es_host, es_port), f'Project {project} does not exist'
 
     _load_analysis(id, projects, data_directory, es_host, es_port)
 
@@ -73,15 +75,17 @@ def load_analysis_shah(ctx, data_directory, id, projects, download, reload):
         data_directory = _download_analysis(
             id, data_directory)
 
-    if reload:
-        _clean_analysis(id, host=es_host, port=es_port)
-
-    assert not _is_loaded(
+    assert reload or not _is_loaded(
         id, es_host, es_port), f'{id} already loaded. To reload, add --reload to command'
 
-    for project in projects:
-        assert _is_project_exist(
-            project, es_host, es_port), f'Project {project} does not exist'
+    nonexistant_projects = [project for project in projects if not _is_project_exist(
+        project, es_host, es_port)]
+
+    assert len(
+        nonexistant_projects) == 0, f'Projects do not exist: {nonexistant_projects} '
+
+    if reload:
+        _clean_analysis(id, host=es_host, port=es_port)
 
     _load_analysis(id, projects, data_directory, es_host, es_port)
 
@@ -110,6 +114,12 @@ def add_project(ctx, project_name, dashboards):
 
     assert not _is_project_exist(
         project_name, es_host, es_port), f'Project with name {project_name} already exists'
+
+    unloaded_dashboards = [dashboard_id for dashboard_id in dashboards if not _is_loaded(
+        dashboard_id, es_host, es_port)]
+
+    assert len(
+        unloaded_dashboards) == 0, f'Dashboards do not exist: {unloaded_dashboards}'
 
     _add_project(project_name, dashboards, es_host, es_port)
 
