@@ -115,6 +115,9 @@ def clean_analysis(dashboard_id, host, port):
     delete_records(constants.DASHBOARD_ENTRY_INDEX,
                    dashboard_id, host=host, port=port)
 
+    logger.info("Remove from projects")
+    remove_dashboard_from_projects(dashboard_id, host, port)
+
 
 def delete_index(index, host="localhost", port=9200):
     es = initialize_es(host, port)
@@ -175,6 +178,32 @@ def add_dashboard_to_projects(dashboard_id, projects, host, port):
             }]
         }
         )
+
+
+def remove_dashboard_from_projects(dashboard_id, host, port):
+    es = initialize_es(host, port)
+
+    response = es.security.get_role()
+    projects = [response_key for response_key in response.keys(
+    ) if response_key.endsWith("_dashboardReader")]
+
+    logger.info(f'Removing {dashboard_id} from {len(projects)} projects')
+    for project in projects:
+        project_data = response[project]
+        project_indices = list(project_data["indices"][0]["names"])
+
+        if dashboard_id in project_indices:
+            logger.info(f'Removing {dashboard_id} from {project}')
+
+            project_indices.remove(dashboard_id)
+
+            es.security.put_role(name=project, body={
+                'indices': [{
+                    'names': project_indices,
+                    'privileges': ["read"]
+                }]
+            }
+            )
 
 #######
 
