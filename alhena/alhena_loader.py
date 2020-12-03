@@ -152,6 +152,7 @@ def load_dashboard_entry(directory, dashboard_id, host, port):
         assert key in metadata.keys(), f"Missing {key} in metadata.json"
 
     record = {
+        "dashboard_id": dashboard_id,
         "sample_id": metadata["sample_id"],
         "library_id": metadata["library_id"],
         "jira_id": dashboard_id,
