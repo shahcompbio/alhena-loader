@@ -163,22 +163,18 @@ def add_dashboard_to_projects(dashboard_id, projects, host, port):
         project_role_name = f'{project}_dashboardReader'
 
         project_role = es.security.get_role(name=project_role_name)
-        project_indices = project_role[project_role_name]["indices"][0]["names"].append(
-            dashboard_id)
+        project_indices = list(
+            project_role[project_role_name]["indices"][0]["names"])
 
-        print(project_role)
-        print(project_role[project_role_name])
-        print(project_role[project_role_name]["indices"])
-        print(project_role[project_role_name]["indices"][0]["names"])
-        print(project_indices)
-        # es.security.delete_role(name=project_role_name, refresh="wait_for")
-        # es.security.put_role(name=project_role_name, body={
-        #     'indices': [{
-        #         'names': project_indices,
-        #         'privileges': ["read"]
-        #     }]
-        # }
-        # )
+        project_indices.append(dashboard_id)
+
+        es.security.put_role(name=project_role_name, body={
+            'indices': [{
+                'names': project_indices,
+                'privileges': ["read"]
+            }]
+        }
+        )
 
 #######
 
