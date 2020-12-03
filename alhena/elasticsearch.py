@@ -137,6 +137,7 @@ def is_loaded(dashboard_id, host, port):
     query = fill_base_query(dashboard_id)
     count = es.count(body=query, index=constants.DASHBOARD_ENTRY_INDEX)
 
+    print(count)
     return count["count"] == 1
 
 
