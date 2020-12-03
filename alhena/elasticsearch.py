@@ -185,7 +185,7 @@ def remove_dashboard_from_projects(dashboard_id, host, port):
 
     response = es.security.get_role()
     projects = [response_key for response_key in response.keys(
-    ) if response_key.endsWith("_dashboardReader")]
+    ) if response_key.endswith("_dashboardReader")]
 
     logger.info(f'Removing {dashboard_id} from {len(projects)} projects')
     for project in projects:
