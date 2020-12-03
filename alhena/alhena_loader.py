@@ -18,8 +18,8 @@ chr_prefixed = {str(a): '0' + str(a) for a in range(1, 10)}
 
 def load_analysis(dashboard_id, projects, directory, host, port):
     logger.info("====================== " + dashboard_id)
-    # load_data(directory, dashboard_id, host, port)
-    # load_dashboard_entry(directory, dashboard_id, host, port)
+    load_data(directory, dashboard_id, host, port)
+    load_dashboard_entry(directory, dashboard_id, host, port)
     add_dashboard_to_projects(dashboard_id, projects, host, port)
     logger.info("Done")
 
