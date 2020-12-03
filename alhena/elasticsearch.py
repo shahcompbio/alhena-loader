@@ -157,6 +157,21 @@ def is_project_exist(project, host, port):
         return False
 
 
+def add_project(project_name, dashboards, host, port):
+    es = initialize_es(host, port)
+
+    project_role_name = f'{project_name}_dashboardReader'
+
+    es.security.put_role(name=project_role_name, body={
+        'indices': [{
+            'names': [constants.DASHBOARD_ENTRY_INDEX] + dashboards,
+            'privileges': ["read"]
+        }]
+    }
+    )
+    logger.info(f'Added new project: {project_name} ')
+
+
 def add_dashboard_to_projects(dashboard_id, projects, host, port):
     es = initialize_es(host, port)
 

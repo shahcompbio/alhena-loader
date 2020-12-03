@@ -5,7 +5,7 @@ import os
 
 from alhena.alhena_loader import load_analysis as _load_analysis
 from alhena.alhena_data import download_analysis as _download_analysis
-from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded, is_project_exist as _is_project_exist, initialize_indices as _initialize_es_indices
+from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded, is_project_exist as _is_project_exist, initialize_indices as _initialize_es_indices, add_project as _add_project
 
 
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"
@@ -98,6 +98,20 @@ def clean_analysis(ctx, dashboard_id):
 @click.pass_context
 def initialize_db(ctx):
     _initialize_es_indices(host=ctx.obj['host'], port=ctx.obj['port'])
+
+
+@main.command()
+@click.argument('project_name')
+@click.option('--dashboard', '-d', 'dashboards', multiple=True, default=[], help='Dashboard to add to project')
+@click.pass_context
+def add_project(ctx, project_name, dashboards):
+    es_host = ctx.obj['host']
+    es_port = ctx.obj["port"]
+
+    assert not _is_project_exist(
+        project_name, es_host, es_port), f'Project with name {project_name} already exists'
+
+    _add_project(project_name, dashboards, es_host, es_port)
 
 
 def start():
