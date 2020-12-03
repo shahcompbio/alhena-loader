@@ -1,6 +1,7 @@
 import urllib3
 from elasticsearch import Elasticsearch
 from elasticsearch import helpers
+from elasticsearch.exceptions import NotFoundError
 import alhena.constants as constants
 import os
 
@@ -145,9 +146,12 @@ def is_project_exist(project, host, port):
 
     dashboard_name = f'{project}_dashboardReader'
 
-    result = es.security.get_role(name=dashboard_name)
+    try:
+        result = es.security.get_role(name=dashboard_name)
+        return dashboard_name in result
 
-    return dashboard_name in result
+    except NotFoundError:
+        return False
 
 
 def add_dashboard_to_projects(dashboard_id, projects, host, port):
