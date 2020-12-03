@@ -83,7 +83,8 @@ def load_analysis_shah(ctx, data_directory, id, projects, download, reload):
         assert _is_project_exist(
             project, es_host, es_port), f'Project {project} does not exist'
 
-    _load_analysis(id, projects, data_directory, es_host, es_port)
+    directory = os.path.join(data_directory, dashboard_id)
+    _load_analysis(id, projects, directory, es_host, es_port)
 
 
 @main.command()
