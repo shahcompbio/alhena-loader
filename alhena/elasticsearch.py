@@ -164,7 +164,7 @@ def add_dashboard_to_projects(dashboard_id, projects, host, port):
 
         project_role = es.security.get_role(name=project_role_name)
         project_indices = list(
-            project_role[project_role_name]["indices"]["names"]).append(dashboard_id)
+            project_role[project_role_name]["indices"][0]["names"]).append(dashboard_id)
 
         print(project_role)
         print(project_role[project_role_name])
