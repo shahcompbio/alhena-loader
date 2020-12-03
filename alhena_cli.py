@@ -49,8 +49,8 @@ def load_analysis(ctx, data_directory, id, projects, reload):
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
 
-    assert _is_loaded(id, es_host,
-                      es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
+    assert not _is_loaded(id, es_host,
+                          es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
 
     for project in projects:
         assert _is_project_exist(
@@ -76,7 +76,7 @@ def load_analysis_shah(ctx, data_directory, id, projects, download, reload):
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
 
-    assert _is_loaded(
+    assert not _is_loaded(
         id, es_host, es_port), f'{id} already loaded. To reload, add --reload to command'
 
     for project in projects:
