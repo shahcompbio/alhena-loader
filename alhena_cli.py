@@ -119,6 +119,8 @@ def add_project(ctx, project_name, dashboards):
     if dashboards[0] == "":
         dashboards = []
 
+    print(dashboards)
+
     unloaded_dashboards = [dashboard_id for dashboard_id in dashboards if not _is_loaded(
         dashboard_id, es_host, es_port)]
 
