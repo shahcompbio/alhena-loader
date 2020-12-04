@@ -107,7 +107,7 @@ def initialize_db(ctx):
 
 @main.command()
 @click.argument('project_name')
-@click.option('--dashboard', '-d', 'dashboards', multiple=True, default=list(), help='Dashboard to add to project')
+@click.option('--dashboard', '-d', 'dashboards', multiple=True, default=[""], help='Dashboard to add to project')
 @click.pass_context
 def add_project(ctx, project_name, dashboards):
     es_host = ctx.obj['host']
@@ -116,13 +116,16 @@ def add_project(ctx, project_name, dashboards):
     assert not _is_project_exist(
         project_name, es_host, es_port), f'Project with name {project_name} already exists'
 
+    if dashboards[0] == "":
+        dashboards = []
+
     unloaded_dashboards = [dashboard_id for dashboard_id in dashboards if not _is_loaded(
         dashboard_id, es_host, es_port)]
 
     assert len(
         unloaded_dashboards) == 0, f'Dashboards do not exist: {unloaded_dashboards}'
-    print(dashboards)
-    #_add_project(project_name, dashboards, es_host, es_port)
+
+    _add_project(project_name, dashboards, es_host, es_port)
 
 
 def start():
