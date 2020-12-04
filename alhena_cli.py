@@ -121,7 +121,7 @@ def add_project(ctx, project_name, dashboards):
 
     assert len(
         unloaded_dashboards) == 0, f'Dashboards do not exist: {unloaded_dashboards}'
-
+    print(dashboards)
     _add_project(project_name, dashboards, es_host, es_port)
 
 
