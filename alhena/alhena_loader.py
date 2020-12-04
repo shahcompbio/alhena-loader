@@ -24,6 +24,27 @@ def load_analysis(dashboard_id, projects, directory, host, port):
     logger.info("Done")
 
 
+# !!! TODO
+# This function assumes that the directory structure is:
+# directory
+# - library #1 (folder)
+# - all data for library #1
+# - library #2 (folder)
+# - all data for library #2
+
+# This function will take the list of library IDs, and load all the each library into
+# indices named after dashboard_id:
+# <dashboard_id>_qc
+# <dashboard_id>_segs
+# <dashboard_id>_bins
+# <dashboard_id>_qc
+
+# IDEALLY We should try and utilize load_data for the actual transformation / loading
+# So this function may just be built to feed load_data the relevant arguments
+def load_merged_analysis(dashboard_id, libraries, projects, directory, host, port):
+    return
+
+
 def load_data(directory, dashboard_id, host, port):
     logger.info("LOADING DATA: " + dashboard_id)
 
