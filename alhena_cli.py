@@ -107,7 +107,7 @@ def initialize_db(ctx):
 
 @main.command()
 @click.argument('project_name')
-@click.option('--dashboard', '-d', 'dashboards', multiple=True, default=["hi"], help='Dashboard to add to project')
+@click.option('--dashboard', '-d', 'dashboards', multiple=True, default=list(), help='Dashboard to add to project')
 @click.pass_context
 def add_project(ctx, project_name, dashboards):
     es_host = ctx.obj['host']
