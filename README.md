@@ -95,7 +95,7 @@ At the end, you should expect:
 To delete data:
 
 ```
-python alhena_cli.py --host <ES_host> --port <ES_port> clean_analysis <dashboard_id>
+python alhena_cli.py --host <ES_host> --port <ES_port> clean-analysis <dashboard_id>
 ```
 
 If you're interested in reloading data, the loading function has a reload flag:
