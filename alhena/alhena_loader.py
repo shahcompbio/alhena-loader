@@ -32,17 +32,52 @@ def load_analysis(dashboard_id, projects, directory, host, port):
 # - library #2 (folder)
 # - all data for library #2
 
-# This function will take the list of library IDs, and load all the each library into
+
+
+# IDEALLY We should try and utilize load_data for the actual transformation / loading
+# So this function may just be built to feed load_data the relevant arguments
+
+# This function will take the list of library IDs, and load all of each library into
+# indices named after dashboard_id:
+# <dashboard_id>_qc
+# <dashboard_id>_segs
+# <dashboard_id>_bins
+# <dashboard_id>_gc_bias
+
+'''
+Useful ES Functions from elasticSearch
+load_records
+load_record
+
+Implement load_merged_analysis and accompanying CLI to take the merged dashboard_id,
+ a list of ticket IDs, a directory, and ES host / port. 
+ It should load the data accompanying the list of ticket IDs into one index. 
+
+MY WAY:
+
+check if dashboard_id exists
 # indices named after dashboard_id:
 # <dashboard_id>_qc
 # <dashboard_id>_segs
 # <dashboard_id>_bins
 # <dashboard_id>_qc
 
-# IDEALLY We should try and utilize load_data for the actual transformation / loading
-# So this function may just be built to feed load_data the relevant arguments
+'''
 def load_merged_analysis(dashboard_id, libraries, projects, directory, host, port):
-    return
+    
+    '''
+    given a path to a folder which has all the yummy subfolders we want, 
+    lets just feed each directory path into load_data?
+
+    '''
+    subfolders = [ f.path for f in os.scandir(directory) if f.is_dir() ]
+    #this doesnt seem enough what am i missing?
+    #this will ignore all metadata
+    #lets see how load_records(data, index_name, host, port) works
+    #t
+
+    for subfolder in subfolders:
+        load_data(subfolder, dashboard_id, host,port)
 
 
 def load_data(directory, dashboard_id, host, port):
