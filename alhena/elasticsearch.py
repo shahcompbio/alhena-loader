@@ -68,7 +68,13 @@ def initialize_indices(host, port):
 ####################
 
 def load_dashboard_record(record, dashboard_id, host, port):
-    load_record(record, dashboard_id,
+    es = initialize_es(host, port)
+    # part_3 
+    if es.exists(index=constants.DASHBOARD_ENTRY_INDEX, id=dashboard_id):
+        logger.info("the analysis object already exists, not Creating or Updating anything")
+    else:
+        logger.info("Creating analysis object")
+        load_record(record, dashboard_id,
                 constants.DASHBOARD_ENTRY_INDEX, host, port)
 
 
@@ -183,7 +189,11 @@ def add_dashboard_to_projects(dashboard_id, projects, host, port):
         project_role = es.security.get_role(name=project_role_name)
         project_indices = list(
             project_role[project_role_name]["indices"][0]["names"])
+        '''
+           part_2 check dashboard_id exists already in names
 
+        '''
+        assert dashboard_id not in project_indices, f"{dashboard_id} already in {project} index"
         project_indices.append(dashboard_id)
 
         es.security.put_role(name=project_role_name, body={
