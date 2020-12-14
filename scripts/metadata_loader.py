@@ -1,3 +1,7 @@
+# generates metadata.json files for every analysis in Fitness, as specified by
+# Alhena sheet in the Fitness google sheet
+
+# credentials.json and token.pickle should be placed in the same repo as /scripts
 
 import logging
 import os
@@ -11,7 +15,6 @@ import pandas as pd
 import numpy as np
 
 
-# import mira.constants as constants
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -24,15 +27,11 @@ SAMPLE_RANGE_NAME = 'alhena!A:I'
 
 CREDENTIALS_PATH = ""
 
-# primary function to be imported and called, pulls alhena metadata from the fitness_pseudobulk google sheet
-# from metadata_loader import get_save_alhena_google_data
 
-#5.2 start here!
-#credentials.json and token.pickle should be placed in the same repo as /scripts
-def get_save_alhena_google_data():
+def get_save_alhena_google_data(directory):
     data = get_alhena_google_data()
     metadata_df = make_dataframe(data)
-    save_metadata(metadata_df)
+    save_metadata(metadata_df, directory)
 
 
 def get_alhena_google_data():
@@ -47,7 +46,7 @@ def get_alhena_google_data():
             flow = InstalledAppFlow.from_client_secrets_file(
                 CREDENTIALS_PATH, SCOPES)
             creds = flow.run_local_server(port=0)
-        with open('/home/nguyenk1/alhena-loader/scripts/token.pickle', 'wb') as token:
+        with open('token.pickle', 'wb') as token:
             pickle.dump(creds, token)
 
     service = build('sheets', 'v4', credentials=creds)
@@ -60,20 +59,8 @@ def get_alhena_google_data():
 
     if not values:
         print('No data found.')
-    else:
-        print("Alhena Google Sheet Values Found!")
-        # print(values)
-        # for row in values:
-        # Print columns A and E, which correspond to indices 0 and 4.
-        # print(row)
+
     return values
-
-
-'''
-creates dataFrame from metadata, pandas group by alhena_id, 
-renames list of jira_tickets to libraries per current specs
-
-'''
 
 
 def make_dataframe(data):
@@ -84,25 +71,19 @@ def make_dataframe(data):
     return metadata_df
 
 
-'''
-saves and puts them in /dat/alhena + /merged + /DASHBOARD_ID.json
-will overwrite whatever dashboard_id.json in /merged, nice!
-'''
-
-
-def save_metadata(df):
-
-    currdir = "/dat/alhena" + "/merged"
+def save_metadata(df, directory):
     for i in df.index:
         curr_metadata = df.loc[i]
         curr_metadata["dashboard_id"] = i
-        currfile_path = currdir + "/" + i + ".json"
+        curr_filename = i + ".json"
+        currfile_path = os.path.join(directory, curr_filename)
         curr_metadata.to_json(currfile_path)
 
 
-def main():
-    get_save_alhena_google_data()
+def main(directory):
+    get_save_alhena_google_data(directory)
 
 
 if __name__ == "__main__":
-    main()
+    directory = sys.argv[1]
+    main(directory)
