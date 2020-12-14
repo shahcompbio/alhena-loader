@@ -67,9 +67,23 @@ def load_analysis(ctx, data_directory, id, projects, reload):
 @click.option('--id', help="ID of dashboard", required=True)
 @click.option('--library', '-l', 'libraries', multiple=True, default=[], help="Libraries in dashboard")
 @click.option('--project', 'projects', multiple=True, default=["DLP"], help="Projects to load dashboard into")
+@click.option('--reload', is_flag=True, help="Force reload this dashboard")
 def load_merged_analysis(ctx, data_directory, id, libraries, projects):
     es_host = ctx.obj['host']
     es_port = ctx.obj["port"]
+
+
+    assert reload or not _is_loaded(
+        id, es_host, es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
+
+    nonexistant_projects = [project for project in projects if not _is_project_exist(
+        project, es_host, es_port)]
+
+    assert len(
+        nonexistant_projects) == 0, f'Projects do not exist: {nonexistant_projects} '
+
+    if reload:
+        _clean_analysis(id, host=es_host, port=es_port)
 
     _load_merged_analysis(id, libraries, projects,
                           data_directory, es_host, es_port)
@@ -81,6 +95,7 @@ def load_merged_analysis(ctx, data_directory, id, libraries, projects):
 @click.option('--id', help="ID of dashboard", required=True)
 @click.option('--library', '-l', 'libraries', multiple=True, default=[], help="Libraries in dashboard")
 @click.option('--project', 'projects', multiple=True, default=["DLP"], help="Projects to load dashboard into")
+@click.option('--reload', is_flag=True, help="Force reload this dashboard")
 #part_5 
 def load_merged_analysis_bccrc(ctx, data_directory, id, libraries, projects):
     es_host = ctx.obj['host']
@@ -88,8 +103,21 @@ def load_merged_analysis_bccrc(ctx, data_directory, id, libraries, projects):
     # get metadata.json ,sc-test.json, id.json located in the data directory
     # check to see if those libraries exist
     # oneline new function called bccrc_verify_libraries()
-    _bccrc_verify_libraries(data_directory, id)
     
+    assert reload or not _is_loaded(
+        id, es_host, es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
+
+    nonexistant_projects = [project for project in projects if not _is_project_exist(
+        project, es_host, es_port)]
+
+    assert len(
+        nonexistant_projects) == 0, f'Projects do not exist: {nonexistant_projects} '
+
+    if reload:
+        _clean_analysis(id, host=es_host, port=es_port)
+
+    _bccrc_verify_libraries(data_directory, id)
+
     _load_merged_analysis(id, libraries, projects,
                           data_directory, es_host, es_port)
 
