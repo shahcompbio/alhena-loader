@@ -14,7 +14,7 @@ urllib3.disable_warnings()
 DEFAULT_MAPPING = {
     "settings": {
         "index": {
-            "max_result_window": 50000
+            "max_result_window": 100000
         }
     },
     'mappings': {
@@ -68,9 +68,8 @@ def initialize_indices(host, port):
 ####################
 
 def load_dashboard_record(record, dashboard_id, host, port):
-    es = initialize_es(host, port)
-        logger.info("Creating analysis object")
-        load_record(record, dashboard_id,
+    logger.info("Creating analysis object")
+    load_record(record, dashboard_id,
                 constants.DASHBOARD_ENTRY_INDEX, host, port)
 
 
@@ -186,6 +185,7 @@ def add_dashboard_to_projects(dashboard_id, projects, host, port):
         project_indices = list(
             project_role[project_role_name]["indices"][0]["names"])
 
+        project_indices.append(dashboard_id)
         es.security.put_role(name=project_role_name, body={
             'indices': [{
                 'names': project_indices,
