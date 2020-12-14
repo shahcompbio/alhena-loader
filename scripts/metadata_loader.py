@@ -28,6 +28,7 @@ CREDENTIALS_PATH = ""
 # from metadata_loader import get_save_alhena_google_data
 
 #5.2 start here!
+#credentials.json and token.pickle should be placed in the same repo as /scripts
 def get_save_alhena_google_data():
     data = get_alhena_google_data()
     metadata_df = make_dataframe(data)
