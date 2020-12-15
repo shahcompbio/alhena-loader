@@ -3,8 +3,8 @@ import logging
 import logging.handlers
 import os
 
-from alhena.alhena_loader import load_analysis as _load_analysis, load_merged_analysis as _load_merged_analysis, bccrc_verify_libraries as _bccrc_verify_libraries
-from alhena.alhena_data import download_analysis as _download_analysis
+from alhena.alhena_loader import load_analysis as _load_analysis, load_merged_analysis as _load_merged_analysis,
+from alhena.alhena_data import download_analysis as _download_analysis, download_libaries_for_merged as _download_libaries_for_merged
 from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded, is_project_exist as _is_project_exist, initialize_indices as _initialize_es_indices, add_project as _add_project
 
 
@@ -65,13 +65,11 @@ def load_analysis(ctx, data_directory, id, projects, reload):
 @click.argument('data_directory')
 @click.pass_context
 @click.option('--id', help="ID of dashboard", required=True)
-@click.option('--library', '-l', 'libraries', multiple=True, default=[], help="Libraries in dashboard")
 @click.option('--project', 'projects', multiple=True, default=["DLP"], help="Projects to load dashboard into")
 @click.option('--reload', is_flag=True, help="Force reload this dashboard")
-def load_merged_analysis(ctx, data_directory, id, libraries, projects):
+def load_merged_analysis(ctx, data_directory, id, projects):
     es_host = ctx.obj['host']
     es_port = ctx.obj["port"]
-
 
     assert reload or not _is_loaded(
         id, es_host, es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
@@ -85,7 +83,7 @@ def load_merged_analysis(ctx, data_directory, id, libraries, projects):
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
 
-    _load_merged_analysis(id, libraries, projects,
+    _load_merged_analysis(id, projects,
                           data_directory, es_host, es_port)
 
 
@@ -93,17 +91,16 @@ def load_merged_analysis(ctx, data_directory, id, libraries, projects):
 @click.argument('data_directory')
 @click.pass_context
 @click.option('--id', help="ID of dashboard", required=True)
-@click.option('--library', '-l', 'libraries', multiple=True, default=[], help="Libraries in dashboard")
 @click.option('--project', 'projects', multiple=True, default=["DLP"], help="Projects to load dashboard into")
 @click.option('--reload', is_flag=True, help="Force reload this dashboard")
-#part_5 
-def load_merged_analysis_bccrc(ctx, data_directory, id, libraries, projects):
+# part_5
+def load_merged_analysis_bccrc(ctx, data_directory, id, projects):
     es_host = ctx.obj['host']
     es_port = ctx.obj["port"]
     # get metadata.json ,sc-test.json, id.json located in the data directory
     # check to see if those libraries exist
     # oneline new function called bccrc_verify_libraries()
-    
+
     assert reload or not _is_loaded(
         id, es_host, es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
 
@@ -116,11 +113,10 @@ def load_merged_analysis_bccrc(ctx, data_directory, id, libraries, projects):
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
 
-    _bccrc_verify_libraries(data_directory, id)
+    _download_libaries_for_merged(data_directory, id)
 
-    _load_merged_analysis(id, libraries, projects,
+    _load_merged_analysis(id, projects,
                           data_directory, es_host, es_port)
-
 
 
 @main.command()

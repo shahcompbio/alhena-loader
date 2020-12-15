@@ -10,11 +10,11 @@ import numpy as np
 import alhena.constants as constants
 from alhena.elasticsearch import initialize_es, load_dashboard_record, load_records as _load_records, add_dashboard_to_projects
 from scgenome.loaders.qc import load_qc_data
-from alhena.alhena_data import download_analysis
 
 logger = logging.getLogger('alhena_loading')
 
 chr_prefixed = {str(a): '0' + str(a) for a in range(1, 10)}
+
 
 def load_analysis(dashboard_id, projects, directory, host, port):
     logger.info("====================== " + dashboard_id)
@@ -23,78 +23,28 @@ def load_analysis(dashboard_id, projects, directory, host, port):
     add_dashboard_to_projects(dashboard_id, projects, host, port)
     logger.info("Done")
 
-# part_1
-def load_merged_analysis(dashboard_id, libraries, projects, directory, host, port):
 
-    # get location of metadata
-    metadatalocation = get_metadata_location(directory, dashboard_id)
-    # open and load metadata
-    with open(metadatalocation) as metadata_file:
+def load_merged_analysis(dashboard_id, projects, directory, host, port):
+
+    metadata_dir = os.path.join(
+        directory, constants.MERGED_DIRECTORYNAME, f'{dashboard_id}.json')
+
+    assert os.path.exists(
+        metadata_dir), f'Metadata file for {dashboard_id} does not exist in {os.path.join(directory, constants.MERGED_DIRECTORYNAME)}'
+
+    with open(metadata_dir) as metadata_file:
         metadata = json.load(metadata_file)
         libraries = metadata["libraries"]
-    # create analysis object and pass metadatalocation to it
-    load_dashboard_entry(metadatalocation, dashboard_id,
-                         host, port, merged=True)
-    part_2
-    add_dashboard_to_projects(dashboard_id, projects, host, port)
 
-    # load each library
-    
     for library in libraries:
-        libraryFolder = os.path.join(directory, library)
-        #print(libraryFolder)
-        load_data(libraryFolder, dashboard_id, host, port, heatmap_order=True)
-    
+        library_directory = os.path.join(directory, library)
+        load_data(library_directory, dashboard_id,
+                  host, port, heatmap_order=True)
 
-# verify? check? download?
-#part 5.1
-def bccrc_verify_libraries(directory, dashboard_id):
-    '''
-    we check the metadata.json in dat/alhena/merged 
-    read libraries
-    check our dat/alhena/sc-test if it has these libraries loaded in
-    just check if sub directory is named after that
-    if it does not have libraries loaded in, we load them in via tantalus one liner :)
-    continue load_merged_analysis
-    '''
-    metadatalocation = get_metadata_location(directory, dashboard_id)
-    # open and load metadata
-    with open(metadatalocation) as metadata_file:
-        metadata = json.load(metadata_file)
-        metadata_libraries = metadata["libraries"]
-    '''
-    print("libraries From metadata")
-    for library in metadata_libraries:
-        print(library)
-    '''
+    load_dashboard_entry(metadata_dir, dashboard_id,
+                         host, port, merged=True)
 
-    # get all dashboard_ids in current directory : dat/alhena
-    data_folders = [f.name for f in os.scandir(directory) if f.is_dir()]
-    # get dashboard_ids in meta_libraries that are NOT in dat/alhena aka missing folders in dat/alhena
-    missing_data_ids = np.setdiff1d(metadata_libraries, data_folders)
-    # numpy truth check aka if returned numpy array is empty
-    if missing_data_ids.size != 0:
-        logger.info(f"downloading missing folders to {directory} ")
-        for missing_data_id in missing_data_ids:
-            logger.info(f"loading {missing_data_id} into {directory}")
-            download_analysis(missing_data_id, directory)
-    else:
-        logger.info(f"No Missing Data Folders in {directory} ")
-
-
-def get_metadata_location(directory, dashboard_id):
-    merged_folder = os.path.join(directory, constants.MERGED_DIRECTORYNAME)
-    # these are the  SC-whatevers.json folders
-    merged_subfolders = [f.name for f in os.scandir(
-        merged_folder) if f.is_file()]
-
-    metadataFile = f"{dashboard_id}.json"
-    # lets hit the merged.json here...where do we go? we go to merged
-    assert metadataFile in merged_subfolders, f"{dashboard_id}.json missing in /merged, add it to Merged Directory,returning"
-    # get location of metadata
-    metadata_location = os.path.join(merged_folder, metadataFile)
-    return metadata_location
-
+    add_dashboard_to_projects(dashboard_id, projects, host, port)
 
 
 def load_data(directory, dashboard_id, host, port, heatmap_order=None):
@@ -116,7 +66,7 @@ def load_data(directory, dashboard_id, host, port, heatmap_order=None):
 
         data = eval(f"get_{index_type}_data(hmmcopy_data)")
         # This is where we match_heatmap_ordering
-        #part_4
+        # part_4
         if index_type == "qc" and heatmap_order:
             data = match_heatmap_order(data)
         logger.info(f"dataframe for {index_name} has shape {data.shape}")
@@ -228,8 +178,7 @@ def load_dashboard_entry(directory, dashboard_id, host, port, merged=None):
         metadata = json.load(metadata_file)
 
     standard_keys = ["sample_id", "description"]
-    # metadata of merged should have libraries field not library_id
-    # metadata of single has library_id
+
     standard_keys.append(
         "libraries") if merged else standard_keys.append("library_id")
 
@@ -246,9 +195,8 @@ def load_dashboard_entry(directory, dashboard_id, host, port, merged=None):
     # duplicate checking
     load_dashboard_record(record, dashboard_id, host, port)
 
-#part_4
+
 def match_heatmap_order(data):
-    # needs location of heatmap_referencedata
     with open('alhena/testdata/final_heatmap.csv') as refdatafile:
         refdata_df = pd.read_csv(refdatafile, index_col=[0])
 
@@ -257,5 +205,3 @@ def match_heatmap_order(data):
         matched_data.drop("order_prev", axis=1, inplace=True)
         matched_data.to_csv('alhena/testdata/output.csv', mode="a")
         return matched_data
-
-
