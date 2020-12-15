@@ -36,18 +36,20 @@ def load_merged_analysis(dashboard_id, projects, directory, host, port):
         metadata = json.load(metadata_file)
         libraries = metadata["libraries"]
 
+    fitness = True if "Fitness" in projects else None
+
     for library in libraries:
         library_directory = os.path.join(directory, library)
         load_data(library_directory, dashboard_id,
-                  host, port, heatmap_order=True)
+                  host, port, heatmap_order=True, fitness=fitness)
 
     load_dashboard_entry(metadata_dir, dashboard_id,
-                         host, port, merged=True)
+                         host, port, merged=True,)
 
     add_dashboard_to_projects(dashboard_id, projects, host, port)
 
 
-def load_data(directory, dashboard_id, host, port, heatmap_order=None):
+def load_data(directory, dashboard_id, host, port, heatmap_order=None, fitness=None):
     logger.info("LOADING DATA: " + dashboard_id)
 
     hmmcopy_data = collections.defaultdict(list)
@@ -66,9 +68,16 @@ def load_data(directory, dashboard_id, host, port, heatmap_order=None):
 
         data = eval(f"get_{index_type}_data(hmmcopy_data)")
         # This is where we match_heatmap_ordering
+        # the better way is to
+        #
+        #
         # part_4
-        if index_type == "qc" and heatmap_order:
-            data = match_heatmap_order(data)
+        if index_type == "qc":
+            if heatmap_order:
+                data = match_heatmap_order(data)
+            if fitness:
+                data = match_fitness_add_clone_id(data)
+
         logger.info(f"dataframe for {index_name} has shape {data.shape}")
         load_records(data, index_name, host, port)
 
@@ -196,12 +205,45 @@ def load_dashboard_entry(directory, dashboard_id, host, port, merged=None):
     load_dashboard_record(record, dashboard_id, host, port)
 
 
-def match_heatmap_order(data):
-    with open('alhena/testdata/final_heatmap.csv') as refdatafile:
-        refdata_df = pd.read_csv(refdatafile, index_col=[0])
+'''
+pass in an object which tells us what columns need to be relabeled
+what it needs to be joined on
+
+'''
+
+
+def matcher(data, w):
+    pass
+
+
+def match_fitness_add_clone_id(data):
+    with open('data/fitness_cell_assignment.csv') as refdatafile:
+        refdata_df = pd.read_csv(refdatafile)
+        refdata_df = refdata_df[["single_cell_id", "letters"]]
 
         matched_data = pd.merge(data, refdata_df,
-                                on="cell_id", suffixes=("_prev", ""))
-        matched_data.drop("order_prev", axis=1, inplace=True)
-        matched_data.to_csv('alhena/testdata/output.csv', mode="a")
+                                left_on="cell_id", right_on="single_cell_id",)
+
+        matched_data.drop("single_cell_id", axis=1, inplace=True)
+
+        matched_data = matched_data.rename(
+            columns={"letters": "clone_id"})
+
+        matched_data.to_csv("data/matched_fitness.csv")
+        return matched_data
+
+
+def match_heatmap_order(data):
+    with open('data/cell_orders.csv') as refdatafile:
+        refdata_df = pd.read_csv(refdatafile)
+
+        refdata_df = refdata_df[["label", "index"]]
+        matched_data = pd.merge(data, refdata_df,
+                                left_on="cell_id", right_on="label")
+        matched_data.drop("label", axis=1, inplace=True)
+        matched_data.drop("order", axis=1, inplace=True)
+        matched_data = matched_data.rename(
+            columns={"index": "order"})
+        matched_data.to_csv(
+            "/home/nguyenk1/alhena-loader/data/matched_heatmap_data.csv")
         return matched_data

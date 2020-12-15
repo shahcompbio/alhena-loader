@@ -25,8 +25,6 @@ SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 SAMPLE_SPREADSHEET_ID = '1veY6s3r-aNu8w7Y4GDZrn0yh6rf2Pe7hQdGbtQePmsk'
 SAMPLE_RANGE_NAME = 'alhena!A:I'
 
-CREDENTIALS_PATH = ""
-
 
 def get_save_alhena_google_data(directory):
     data = get_alhena_google_data()
@@ -66,8 +64,12 @@ def get_alhena_google_data():
 def make_dataframe(data):
 
     metadata_df = pd.DataFrame(data[1:], columns=data[0])
-    metadata_df = metadata_df.groupby('alhena_id').agg(list)
+    metadata_df = metadata_df.groupby('alhena_id').agg(
+        lambda x: x.unique().tolist())
+
     metadata_df.rename(columns={'jira_ticket': 'libraries'}, inplace=True)
+    if "description" not in metadata_df.columns:
+        metadata_df["description"] = ""
     return metadata_df
 
 

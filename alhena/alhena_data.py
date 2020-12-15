@@ -25,7 +25,7 @@ def download_libaries_for_merged(directory, dashboard_id):
 
     logger.info(f'Checking for {len(metadata_libraries)} libraries')
     missing_libraries = [
-        library for library in metadata_libraries if not os.path.exists(directory, library)]
+        library for library in metadata_libraries if not os.path.exists(os.path.join(directory, library))]
 
     if len(missing_libraries) != 0:
         logger.info(
