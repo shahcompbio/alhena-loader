@@ -150,6 +150,70 @@ def load_analysis_shah(ctx, data_directory, id, projects, download, reload):
 
 
 @main.command()
+@click.argument('projects', nargs=-1, help="List of project names")
+@click.pass_context
+def verify_projects(ctx, projects):
+    es_host = ctx.obj['host']
+    es_port = ctx.obj["port"]
+
+    logger = ctx.obj["logger"]
+
+    good_projects = []
+    bad_projects = []
+    for project in projects:
+        if _is_project_exist(project, es_host, es_port):
+            good_projects.append(project)
+        else:
+            bad_projects.append(project)
+
+    logger.info(f'==== Verified project names: {len(good_projects)}')
+    for project in good_projects:
+        logger.info(project)
+
+    logger.info(
+        f'==== Incorrect / Missing project names: {len(bad_projects)} ')
+    for project in bad_projects:
+        logger.info(project)
+
+
+@main.command()
+@click.pass_context
+def all_projects(ctx):
+    es_host = ctx.obj['host']
+    es_port = ctx.obj["port"]
+    # want to show all projects in given ES
+    return
+
+
+@main.command()
+@click.argument('data_directory')
+@click.pass_context
+@click.option('--id', help="ID of dashboard", required=True)
+@click.option('--project', 'projects', multiple=True, default=["DLP"], help="Projects to load dashboard into")
+@click.option('--download', is_flag=True, help="Download data")
+@click.option('--reload', is_flag=True, help="Force reload this dashboard")
+def load_dashboard(ctx, data_directory, id, projects, download, reload):
+    es_host = ctx.obj['host']
+    es_port = ctx.obj["port"]
+
+    nonexistant_projects = [project for project in projects if not _is_project_exist(
+        project, es_host, es_port)]
+
+    assert len(
+        nonexistant_projects) == 0, f'Projects do not exist: {nonexistant_projects} '
+
+    # TODO finish with logic below
+    # determine if dashbaord_id is merged or single (check if metadata file in merged dir exists)
+
+    # if download, then download_analysis / download_merged (depending on above)
+
+    # if reload, then clean_analysis
+
+    # if _is_loaded, then add dashboard_id to projects
+    # else load_analysis / load merged
+
+
+@main.command()
 @click.argument('dashboard_id')
 @click.pass_context
 def clean_analysis(ctx, dashboard_id):

@@ -39,6 +39,7 @@ def download_libaries_for_merged(directory, dashboard_id):
 def download_analysis(dashboard_id, data_directory):
     directory = os.path.join(data_directory, dashboard_id)
 
+    # !!! TODO want to change this assert to just a pass - that is, if path exists already, then just return directory without downloading
     assert not os.path.exists(
         directory), f"Directory {directory} already exists"
 

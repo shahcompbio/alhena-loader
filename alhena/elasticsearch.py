@@ -103,7 +103,10 @@ def load_record(record, record_id, index, host, port, mapping=DEFAULT_MAPPING):
 ###########
 
 
-def clean_analysis(dashboard_id, host, port):
+# !!! TODO add project (default empty) argument here
+# if it is empty, by default delete it from ALL projects
+# otherwise just delete from projects listed
+def clean_analysis(dashboard_id, host, port, projects=[]):
     logger.info("====================== " + dashboard_id)
     logger.info("Cleaning records")
 
@@ -174,6 +177,7 @@ def add_project(project_name, dashboards, host, port):
 
 
 def add_dashboard_to_projects(dashboard_id, projects, host, port):
+    # TODO add check on whether dashboard_id already exists in project list. If so, then continue without updating
     es = initialize_es(host, port)
 
     for project in projects:
