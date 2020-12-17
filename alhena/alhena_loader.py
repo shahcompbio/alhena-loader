@@ -212,16 +212,16 @@ what it needs to be joined on
 
 
 def get_fitness_columns(directory):
-    with open(os.path.join(directory, constants.MERGED_DIRECTORYNAME, "fitness_cell_assignment.csv")) as clone_file:
-        clone_df = pd.read_csv(clone_file)
-        clone_df = clone_df.rename(
-            columns={"single_cell_id": "cell_id", "letters": "clone_id"})
-        clone_df = clone_df[["cell_id", "clone_id"]]
+    clone_df = pd.read_csv(os.path.join(
+        directory, constants.MERGED_DIRECTORYNAME, "fitness_cell_assignment.csv"))
+    clone_df = clone_df.rename(
+        columns={"single_cell_id": "cell_id", "letters": "clone_id"})
+    clone_df = clone_df[["cell_id", "clone_id"]]
 
-    with open(os.path.join(directory, constants.MERGED_DIRECTORYNAME, "cell_order.csv")) as order_file:
-        order_df = pd.read_csv(order_file)
-        order_df = order_df.rename(
-            columns={"label": "cell_id", "index": "order"})
-        order_df = order_df[["cell_id", "order"]]
+    order_df = pd.read_csv(os.path.join(
+        directory, constants.MERGED_DIRECTORYNAME, "cell_order.csv"))
+    order_df = order_df.rename(
+        columns={"label": "cell_id", "index": "order"})
+    order_df = order_df[["cell_id", "order"]]
 
     return clone_df.merge(order_df).to_dict('records')
