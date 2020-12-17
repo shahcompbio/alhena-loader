@@ -211,7 +211,8 @@ what it needs to be joined on
 def get_fitness_columns(directory):
     with open(os.path.join(directory, constants.MERGED_DIRECTORYNAME, "fitness_cell_assignment.csv")) as clone_file:
         clone_df = pd.read_csv(clone_file)
-        clone_df = clone_df.rename(columns={"single_cell_id", "cell_id", "letters": "clone_id"})
+        clone_df = clone_df.rename(
+            columns={"single_cell_id": "cell_id", "letters": "clone_id"})
         clone_df = clone_df[["cell_id", "clone_id"]]
 
     with open(os.path.join(directory, constants.MERGED_DIRECTORYNAME, "cell_order.csv")) as order_file:
