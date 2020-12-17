@@ -217,7 +217,8 @@ def get_fitness_columns(directory):
 
     with open(os.path.join(directory, constants.MERGED_DIRECTORYNAME, "cell_order.csv")) as order_file:
         order_df = pd.read_csv(order_file)
-        order_df = order_df.rename(columns={"label": "cell_id", "index", "order"})
+        order_df = order_df.rename(
+            columns={"label": "cell_id", "index": "order"})
         order_df = order_df[["cell_id", "clone_id"]]
 
     return clone_df.merge(order_df)
