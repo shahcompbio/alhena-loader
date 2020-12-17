@@ -36,12 +36,13 @@ def load_merged_analysis(dashboard_id, projects, directory, host, port):
         metadata = json.load(metadata_file)
         libraries = metadata["libraries"]
 
-    fitness = True if "Fitness" in projects else None
+    add_columns = get_fitness_columns(
+        directory) if "Fitness" in projects else []
 
     for library in libraries:
         library_directory = os.path.join(directory, library)
         load_data(library_directory, dashboard_id,
-                  host, port, heatmap_order=True, fitness=fitness)
+                  host, port, add_columns=add_columns)
 
     load_dashboard_entry(metadata_dir, dashboard_id,
                          host, port, merged=True,)
@@ -49,7 +50,7 @@ def load_merged_analysis(dashboard_id, projects, directory, host, port):
     add_dashboard_to_projects(dashboard_id, projects, host, port)
 
 
-def load_data(directory, dashboard_id, host, port, heatmap_order=None, fitness=None):
+def load_data(directory, dashboard_id, host, port, add_columns=[]):
     logger.info("LOADING DATA: " + dashboard_id)
 
     hmmcopy_data = collections.defaultdict(list)
@@ -67,18 +68,13 @@ def load_data(directory, dashboard_id, host, port, heatmap_order=None, fitness=N
         logger.info(f"Index {index_name}")
 
         data = eval(f"get_{index_type}_data(hmmcopy_data)")
-        # This is where we match_heatmap_ordering
-        # the better way is to
-        #
-        #
-        # part_4
-        if index_type == "qc":
-            if heatmap_order:
-                data = match_heatmap_order(data)
-            if fitness:
-                data = match_fitness_add_clone_id(data)
 
-        logger.info(f"dataframe for {index_name} has shape {data.shape}")
+        if index_type == "qc" and len(add_columns) > 0:
+            old_cell_count = data.shape[0]
+            column_df = pd.DataFrame(add_columns)
+            data = data.merge(column_df)
+            assert data.shape[0] == old_cell_count, "Missing cells after merge with new columns"
+
         load_records(data, index_name, host, port)
 
 
@@ -212,38 +208,15 @@ what it needs to be joined on
 '''
 
 
-def matcher(data, w):
-    pass
+def get_fitness_columns(directory):
+    with open(os.path.join(directory, constants.MERGED_DIRECTORYNAME, "fitness_cell_assignment.csv")) as clone_file:
+        clone_df = pd.read_csv(clone_file)
+        clone_df = clone_df.rename(columns={"single_cell_id", "cell_id", "letters": "clone_id"})
+        clone_df = clone_df[["cell_id", "clone_id"]]
 
+    with open(os.path.join(directory, constants.MERGED_DIRECTORYNAME, "cell_order.csv")) as order_file:
+        order_df = pd.read_csv(order_file)
+        order_df = order_df.rename(columns={"label": "cell_id", "index", "order"})
+        order_df = order_df[["cell_id", "clone_id"]]
 
-def match_fitness_add_clone_id(data):
-    with open('data/fitness_cell_assignment.csv') as refdatafile:
-        refdata_df = pd.read_csv(refdatafile)
-        refdata_df = refdata_df[["single_cell_id", "letters"]]
-
-        matched_data = pd.merge(data, refdata_df,
-                                left_on="cell_id", right_on="single_cell_id",)
-
-        matched_data.drop("single_cell_id", axis=1, inplace=True)
-
-        matched_data = matched_data.rename(
-            columns={"letters": "clone_id"})
-
-        matched_data.to_csv("data/matched_fitness.csv")
-        return matched_data
-
-
-def match_heatmap_order(data):
-    with open('data/cell_orders.csv') as refdatafile:
-        refdata_df = pd.read_csv(refdatafile)
-
-        refdata_df = refdata_df[["label", "index"]]
-        matched_data = pd.merge(data, refdata_df,
-                                left_on="cell_id", right_on="label")
-        matched_data.drop("label", axis=1, inplace=True)
-        matched_data.drop("order", axis=1, inplace=True)
-        matched_data = matched_data.rename(
-            columns={"index": "order"})
-        matched_data.to_csv(
-            "/home/nguyenk1/alhena-loader/data/matched_heatmap_data.csv")
-        return matched_data
+    return clone_df.merge(order_df)
