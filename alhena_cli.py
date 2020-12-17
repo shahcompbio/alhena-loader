@@ -213,7 +213,7 @@ def load_dashboard(ctx, data_directory, id, projects, download, reload):
         if download_type == "merged":
             _download_libraries_for_merged(id, data_directory)
         elif download_type == "single":
-            _download_analysis(
+            data_directory = _download_analysis(
                 id, data_directory)
 
     if reload:
