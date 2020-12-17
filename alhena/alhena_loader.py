@@ -73,6 +73,7 @@ def load_data(directory, dashboard_id, host, port, add_columns=[]):
             old_cell_count = data.shape[0]
             column_df = pd.DataFrame(add_columns)
             data = data.merge(column_df)
+            print(data)
             print(old_cell_count)
             print(data.shape[0])
             assert data.shape[0] == old_cell_count, "Missing cells after merge with new columns"
@@ -223,4 +224,4 @@ def get_fitness_columns(directory):
             columns={"label": "cell_id", "index": "order"})
         order_df = order_df[["cell_id", "order"]]
 
-    return clone_df.merge(order_df)
+    return clone_df.merge(order_df).to_dict('records')
