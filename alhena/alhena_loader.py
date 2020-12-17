@@ -219,6 +219,6 @@ def get_fitness_columns(directory):
         order_df = pd.read_csv(order_file)
         order_df = order_df.rename(
             columns={"label": "cell_id", "index": "order"})
-        order_df = order_df[["cell_id", "clone_id"]]
+        order_df = order_df[["cell_id", "order"]]
 
     return clone_df.merge(order_df)
