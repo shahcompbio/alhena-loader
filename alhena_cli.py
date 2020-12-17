@@ -149,7 +149,6 @@ def load_analysis_shah(ctx, data_directory, id, projects, download, reload):
     _load_analysis(id, projects, data_directory, es_host, es_port)
 
 
-'''
 @main.command()
 @click.argument('projects', nargs=-1, help="List of project names")
 @click.pass_context
@@ -175,7 +174,6 @@ def verify_projects(ctx, projects):
         f'==== Incorrect / Missing project names: {len(bad_projects)} ')
     for project in bad_projects:
         logger.info(project)
-'''
 
 
 @main.command()
