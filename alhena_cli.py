@@ -46,8 +46,8 @@ def load_analysis(ctx, data_directory, id, projects, reload):
     es_host = ctx.obj['host']
     es_port = ctx.obj["port"]
 
-    assert reload or not _is_loaded(
-        id, es_host, es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
+    # assert reload or not _is_loaded(
+    #     id, es_host, es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
 
     nonexistant_projects = [project for project in projects if not _is_project_exist(
         project, es_host, es_port)]
