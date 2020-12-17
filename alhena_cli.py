@@ -5,7 +5,7 @@ import os
 
 from alhena.alhena_loader import load_analysis as _load_analysis, load_merged_analysis as _load_merged_analysis
 from alhena.alhena_data import download_analysis as _download_analysis, download_libraries_for_merged as _download_libraries_for_merged
-from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded, is_project_exist as _is_project_exist, initialize_indices as _initialize_es_indices, add_project as _add_project
+from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded, is_project_exist as _is_project_exist, initialize_indices as _initialize_es_indices, add_project as _add_project, get_projects as _get_projects
 import alhena.constants as constants
 
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"
@@ -150,7 +150,7 @@ def load_analysis_shah(ctx, data_directory, id, projects, download, reload):
 
 
 @main.command()
-@click.argument('projects', nargs=-1, help="List of project names")
+@click.option('--project', 'projects', multiple=True, help="List of project names")
 @click.pass_context
 def verify_projects(ctx, projects):
     es_host = ctx.obj['host']
@@ -181,8 +181,13 @@ def verify_projects(ctx, projects):
 def all_projects(ctx):
     es_host = ctx.obj['host']
     es_port = ctx.obj["port"]
+    logger = ctx.obj["logger"]
     # want to show all projects in given ES
-    return
+    projects = _get_projects(es_host, es_port)
+
+    logger.info(f'==== All project names for {es_host}:{es_port}')
+    for project in projects:
+        logger.info(project)
 
 
 @main.command()
@@ -201,30 +206,23 @@ def load_dashboard(ctx, data_directory, id, projects, download, reload):
     assert len(
         nonexistant_projects) == 0, f'Projects do not exist: {nonexistant_projects} '
 
-    # TODO finish with logic below
-    # determine if dashbaord_id is merged or single (check if metadata file in merged dir exists)
-    # check in possible paths
-    download_type = "single"
-    if os.path.isfile(os.path.join(data_directory, constants.MERGED_DIRECTORYNAME, f"{id}.json")):
-        download_type = "merged"
-    # if download, then download_analysis / download_merged (depending on above)
+    download_type = "merged" if os.path.exists(os.path.join(
+        data_directory, constants.MERGED_DIRECTORYNAME, f"{id}.json")) else "single"
+
     if download:
         if download_type == "merged":
             _download_libraries_for_merged(id, data_directory)
         elif download_type == "single":
             _download_analysis(
                 id, data_directory)
-    # if reload, then clean_analysis
+
     if reload:
-        _clean_analysis(id, host=es_host, port=es_port)
+        _clean_analysis(id, host=es_host, port=es_port, projects=projects)
 
-    # if _is_loaded, then add dashboard_id to projects
     if _is_loaded(id, es_host, es_port):
-
         [_add_project(project_name, id, es_host, es_port)
          for project_name in projects]
 
-    # else load_analysis / load merged
     else:
         if download_type == "merged":
             _load_merged_analysis(id, projects,

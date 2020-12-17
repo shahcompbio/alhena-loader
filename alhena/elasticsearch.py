@@ -103,9 +103,6 @@ def load_record(record, record_id, index, host, port, mapping=DEFAULT_MAPPING):
 ###########
 
 
-# !!! TODO add project (default empty) argument here
-# if it is empty, by default delete it from ALL projects
-# otherwise just delete from projects listed
 def clean_analysis(dashboard_id, host, port, projects=[]):
     logger.info("====================== " + dashboard_id)
     logger.info("Cleaning records")
@@ -119,8 +116,6 @@ def clean_analysis(dashboard_id, host, port, projects=[]):
     delete_records(constants.DASHBOARD_ENTRY_INDEX,
                    dashboard_id, host=host, port=port)
 
-    # if it is empty, by default delete it from ALL projects
-    # i handled this in remove_dashboard_from_projects
     logger.info("Removing from projects")
     remove_dashboard_from_projects(dashboard_id, host, port, projects)
 
@@ -148,6 +143,33 @@ def is_loaded(dashboard_id, host, port):
     count = es.count(body=query, index=constants.DASHBOARD_ENTRY_INDEX)
 
     return count["count"] == 1
+
+
+def fill_base_query(value):
+    return {
+        "query": {
+            "bool": {
+                "filter": {
+                    "term": {
+                        "dashboard_id": value
+                    }
+                }
+            }
+        }
+    }
+
+
+# PROJECTS
+
+
+def get_projects(host, port):
+    es = initialize_es(host, port)
+
+    response = es.security.get_role()
+    projects = [response_key[:-len("_dashboardReader")] for response_key in response.keys(
+    ) if response_key.endswith("_dashboardReader")]
+
+    return projects
 
 
 def is_project_exist(project, host, port):
@@ -179,7 +201,6 @@ def add_project(project_name, dashboards, host, port):
 
 
 def add_dashboard_to_projects(dashboard_id, projects, host, port):
-    # TODO add check on whether dashboard_id already exists in project list. If so, then continue without updating
 
     es = initialize_es(host, port)
 
@@ -205,18 +226,19 @@ def add_dashboard_to_projects(dashboard_id, projects, host, port):
             )
 
 
-def remove_dashboard_from_projects(dashboard_id, host, port, selected_projects):
+def remove_dashboard_from_projects(dashboard_id, host, port, projects):
     es = initialize_es(host, port)
 
-    response = es.security.get_role()
-    if selected_projects:  # specified projects to remove from
+    if len(projects) > 0:
         projects = [
-            f"{proj}_dashboardReader" for proj in selected_projects]
+            f"{proj}_dashboardReader" for proj in projects]
     else:
+        response = es.security.get_role()
         projects = [response_key for response_key in response.keys(
         ) if response_key.endswith("_dashboardReader")]
 
     logger.info(f'Removing {dashboard_id} from {len(projects)} projects')
+
     for project in projects:
         project_data = response[project]
         project_indices = list(project_data["indices"][0]["names"])
@@ -233,19 +255,3 @@ def remove_dashboard_from_projects(dashboard_id, host, port, selected_projects):
                 }]
             }
             )
-
-#######
-
-
-def fill_base_query(value):
-    return {
-        "query": {
-            "bool": {
-                "filter": {
-                    "term": {
-                        "dashboard_id": value
-                    }
-                }
-            }
-        }
-    }
