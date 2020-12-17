@@ -4,9 +4,9 @@ import logging.handlers
 import os
 
 from alhena.alhena_loader import load_analysis as _load_analysis, load_merged_analysis as _load_merged_analysis
-from alhena.alhena_data import download_analysis as _download_analysis, download_libaries_for_merged as _download_libaries_for_merged
+from alhena.alhena_data import download_analysis as _download_analysis, download_libraries_for_merged as _download_libraries_for_merged
 from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded, is_project_exist as _is_project_exist, initialize_indices as _initialize_es_indices, add_project as _add_project
-
+import alhena.constants as constants
 
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"
 
@@ -113,7 +113,7 @@ def load_merged_analysis_bccrc(ctx, data_directory, id, projects, reload):
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
 
-    _download_libaries_for_merged(data_directory, id)
+    _download_libraries_for_merged(id, data_directory)
 
     _load_merged_analysis(id, projects,
                           data_directory, es_host, es_port)
@@ -149,6 +149,7 @@ def load_analysis_shah(ctx, data_directory, id, projects, download, reload):
     _load_analysis(id, projects, data_directory, es_host, es_port)
 
 
+'''
 @main.command()
 @click.argument('projects', nargs=-1, help="List of project names")
 @click.pass_context
@@ -174,6 +175,7 @@ def verify_projects(ctx, projects):
         f'==== Incorrect / Missing project names: {len(bad_projects)} ')
     for project in bad_projects:
         logger.info(project)
+'''
 
 
 @main.command()
@@ -195,7 +197,6 @@ def all_projects(ctx):
 def load_dashboard(ctx, data_directory, id, projects, download, reload):
     es_host = ctx.obj['host']
     es_port = ctx.obj["port"]
-
     nonexistant_projects = [project for project in projects if not _is_project_exist(
         project, es_host, es_port)]
 
@@ -204,33 +205,54 @@ def load_dashboard(ctx, data_directory, id, projects, download, reload):
 
     # TODO finish with logic below
     # determine if dashbaord_id is merged or single (check if metadata file in merged dir exists)
-
+    # check in possible paths
+    download_type = "single"
+    if os.path.isfile(os.path.join(data_directory, constants.MERGED_DIRECTORYNAME, f"{id}.json")):
+        download_type = "merged"
     # if download, then download_analysis / download_merged (depending on above)
-
+    if download:
+        if download_type == "merged":
+            _download_libraries_for_merged(id, data_directory)
+        elif download_type == "single":
+            _download_analysis(
+                id, data_directory)
     # if reload, then clean_analysis
+    if reload:
+        _clean_analysis(id, host=es_host, port=es_port)
 
     # if _is_loaded, then add dashboard_id to projects
+    if _is_loaded(id, es_host, es_port):
+
+        [_add_project(project_name, id, es_host, es_port)
+         for project_name in projects]
+
     # else load_analysis / load merged
+    else:
+        if download_type == "merged":
+            _load_merged_analysis(id, projects,
+                                  data_directory, es_host, es_port)
+        elif download_type == "single":
+            _load_analysis(id, projects, data_directory, es_host, es_port)
 
 
-@main.command()
-@click.argument('dashboard_id')
-@click.pass_context
+@ main.command()
+@ click.argument('dashboard_id')
+@ click.pass_context
 def clean_analysis(ctx, dashboard_id):
     _clean_analysis(dashboard_id,
                     host=ctx.obj['host'], port=ctx.obj['port'])
 
 
-@main.command()
-@click.pass_context
+@ main.command()
+@ click.pass_context
 def initialize_db(ctx):
     _initialize_es_indices(host=ctx.obj['host'], port=ctx.obj['port'])
 
 
-@main.command()
-@click.argument('project_name')
-@click.pass_context
-@click.option('--dashboard', '-d', 'dashboards', multiple=True, default=[""], help='Dashboard to add to project')
+@ main.command()
+@ click.argument('project_name')
+@ click.pass_context
+@ click.option('--dashboard', '-d', 'dashboards', multiple=True, default=[""], help='Dashboard to add to project')
 def add_project(ctx, project_name, dashboards):
     es_host = ctx.obj['host']
     es_port = ctx.obj["port"]

@@ -11,7 +11,7 @@ logger = logging.getLogger('alhena_loading')
 __BASE_URL = "https://colossus.canadacentral.cloudapp.azure.com/api"
 
 
-def download_libaries_for_merged(directory, dashboard_id):
+def download_libraries_for_merged(dashboard_id, directory):
 
     metadata_dir = os.path.join(
         directory, constants.MERGED_DIRECTORYNAME, f'{dashboard_id}.json')
@@ -40,8 +40,9 @@ def download_analysis(dashboard_id, data_directory):
     directory = os.path.join(data_directory, dashboard_id)
 
     # !!! TODO want to change this assert to just a pass - that is, if path exists already, then just return directory without downloading
-    assert not os.path.exists(
-        directory), f"Directory {directory} already exists"
+    # checking to see if the directory exists in dat/alhena
+    if os.path.isdir(directory):
+        return directory
 
     # Download data from Tantalus
     logger.info(f'Downloading {dashboard_id} to {directory} ')

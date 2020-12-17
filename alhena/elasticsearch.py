@@ -119,8 +119,10 @@ def clean_analysis(dashboard_id, host, port, projects=[]):
     delete_records(constants.DASHBOARD_ENTRY_INDEX,
                    dashboard_id, host=host, port=port)
 
-    logger.info("Remove from projects")
-    remove_dashboard_from_projects(dashboard_id, host, port)
+    # if it is empty, by default delete it from ALL projects
+    # i handled this in remove_dashboard_from_projects
+    logger.info("Removing from projects")
+    remove_dashboard_from_projects(dashboard_id, host, port, projects)
 
 
 def delete_index(index, host="localhost", port=9200):
@@ -178,6 +180,7 @@ def add_project(project_name, dashboards, host, port):
 
 def add_dashboard_to_projects(dashboard_id, projects, host, port):
     # TODO add check on whether dashboard_id already exists in project list. If so, then continue without updating
+
     es = initialize_es(host, port)
 
     for project in projects:
@@ -189,22 +192,29 @@ def add_dashboard_to_projects(dashboard_id, projects, host, port):
         project_indices = list(
             project_role[project_role_name]["indices"][0]["names"])
 
-        project_indices.append(dashboard_id)
-        es.security.put_role(name=project_role_name, body={
-            'indices': [{
-                'names': project_indices,
-                'privileges': ["read"]
-            }]
-        }
-        )
+        if dashboard_id in project_indices:
+            continue
+        else:
+            project_indices.append(dashboard_id)
+            es.security.put_role(name=project_role_name, body={
+                'indices': [{
+                    'names': project_indices,
+                    'privileges': ["read"]
+                }]
+            }
+            )
 
 
-def remove_dashboard_from_projects(dashboard_id, host, port):
+def remove_dashboard_from_projects(dashboard_id, host, port, selected_projects):
     es = initialize_es(host, port)
 
     response = es.security.get_role()
-    projects = [response_key for response_key in response.keys(
-    ) if response_key.endswith("_dashboardReader")]
+    if selected_projects:  # specified projects to remove from
+        projects = [
+            f"{proj}_dashboardReader" for proj in selected_projects]
+    else:
+        projects = [response_key for response_key in response.keys(
+        ) if response_key.endswith("_dashboardReader")]
 
     logger.info(f'Removing {dashboard_id} from {len(projects)} projects')
     for project in projects:
