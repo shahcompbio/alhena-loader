@@ -232,26 +232,47 @@ def remove_dashboard_from_projects(dashboard_id, host, port, projects):
     if len(projects) > 0:
         projects = [
             f"{proj}_dashboardReader" for proj in projects]
+
+        logger.info(f'Removing {dashboard_id} from {len(projects)} projects')
+
+        for project in projects:
+            response = es.security.get_role(name=project)
+
+            project_data = response[project]
+            project_indices = list(project_data["indices"][0]["names"])
+
+            if dashboard_id in project_indices:
+                logger.info(f'Removing {dashboard_id} from {project}')
+
+                project_indices.remove(dashboard_id)
+
+                es.security.put_role(name=project, body={
+                    'indices': [{
+                        'names': project_indices,
+                        'privileges': ["read"]
+                    }]
+                }
+                )
     else:
         response = es.security.get_role()
         projects = [response_key for response_key in response.keys(
         ) if response_key.endswith("_dashboardReader")]
 
-    logger.info(f'Removing {dashboard_id} from {len(projects)} projects')
+        logger.info(f'Removing {dashboard_id} from {len(projects)} projects')
 
-    for project in projects:
-        project_data = response[project]
-        project_indices = list(project_data["indices"][0]["names"])
+        for project in projects:
+            project_data = response[project]
+            project_indices = list(project_data["indices"][0]["names"])
 
-        if dashboard_id in project_indices:
-            logger.info(f'Removing {dashboard_id} from {project}')
+            if dashboard_id in project_indices:
+                logger.info(f'Removing {dashboard_id} from {project}')
 
-            project_indices.remove(dashboard_id)
+                project_indices.remove(dashboard_id)
 
-            es.security.put_role(name=project, body={
-                'indices': [{
-                    'names': project_indices,
-                    'privileges': ["read"]
-                }]
-            }
-            )
+                es.security.put_role(name=project, body={
+                    'indices': [{
+                        'names': project_indices,
+                        'privileges': ["read"]
+                    }]
+                }
+                )
