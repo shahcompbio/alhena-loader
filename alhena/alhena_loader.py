@@ -73,9 +73,6 @@ def load_data(directory, dashboard_id, host, port, add_columns=[]):
             old_cell_count = data.shape[0]
             column_df = pd.DataFrame(add_columns)
             data = data.merge(column_df)
-            print(data)
-            print(old_cell_count)
-            print(data.shape[0])
             assert data.shape[0] == old_cell_count, "Missing cells after merge with new columns"
 
         load_records(data, index_name, host, port)
