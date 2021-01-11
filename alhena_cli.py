@@ -5,7 +5,7 @@ import os
 
 from alhena.alhena_loader import load_analysis as _load_analysis, load_merged_analysis as _load_merged_analysis
 from alhena.alhena_data import download_analysis as _download_analysis, download_libraries_for_merged as _download_libraries_for_merged
-from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded, is_project_exist as _is_project_exist, initialize_indices as _initialize_es_indices, add_project as _add_project, get_projects as _get_projects
+from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded, is_project_exist as _is_project_exist, initialize_indices as _initialize_es_indices, add_project as _add_project, get_projects as _get_projects, add_dashboard_to_projects as _add_dashboard_to_projects
 import alhena.constants as constants
 
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"
@@ -220,9 +220,8 @@ def load_dashboard(ctx, data_directory, id, projects, download, reload):
         _clean_analysis(id, host=es_host, port=es_port, projects=projects)
 
     if _is_loaded(id, es_host, es_port):
-        [_add_project(project_name, id, es_host, es_port)
-         for project_name in projects]
-
+        _add_dashboard_to_projects(id, projects, es_host, es_port)
+        
     else:
         if download_type == "merged":
             _load_merged_analysis(id, projects,
