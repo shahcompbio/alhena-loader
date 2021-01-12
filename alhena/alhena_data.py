@@ -39,8 +39,6 @@ def download_libraries_for_merged(dashboard_id, directory):
 def download_analysis(dashboard_id, data_directory):
     directory = os.path.join(data_directory, dashboard_id)
 
-    # !!! TODO want to change this assert to just a pass - that is, if path exists already, then just return directory without downloading
-    # checking to see if the directory exists in dat/alhena
     if os.path.isdir(directory):
         return directory
 
