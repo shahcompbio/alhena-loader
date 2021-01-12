@@ -14,7 +14,7 @@ urllib3.disable_warnings()
 DEFAULT_MAPPING = {
     "settings": {
         "index": {
-            "max_result_window": 50000
+            "max_result_window": 100000
         }
     },
     'mappings': {
@@ -68,6 +68,7 @@ def initialize_indices(host, port):
 ####################
 
 def load_dashboard_record(record, dashboard_id, host, port):
+    logger.info("Creating analysis object")
     load_record(record, dashboard_id,
                 constants.DASHBOARD_ENTRY_INDEX, host, port)
 
@@ -102,7 +103,7 @@ def load_record(record, record_id, index, host, port, mapping=DEFAULT_MAPPING):
 ###########
 
 
-def clean_analysis(dashboard_id, host, port):
+def clean_analysis(dashboard_id, host, port, projects=[]):
     logger.info("====================== " + dashboard_id)
     logger.info("Cleaning records")
 
@@ -115,8 +116,8 @@ def clean_analysis(dashboard_id, host, port):
     delete_records(constants.DASHBOARD_ENTRY_INDEX,
                    dashboard_id, host=host, port=port)
 
-    logger.info("Remove from projects")
-    remove_dashboard_from_projects(dashboard_id, host, port)
+    logger.info("Removing from projects")
+    remove_dashboard_from_projects(dashboard_id, host, port, projects)
 
 
 def delete_index(index, host="localhost", port=9200):
@@ -142,6 +143,33 @@ def is_loaded(dashboard_id, host, port):
     count = es.count(body=query, index=constants.DASHBOARD_ENTRY_INDEX)
 
     return count["count"] == 1
+
+
+def fill_base_query(value):
+    return {
+        "query": {
+            "bool": {
+                "filter": {
+                    "term": {
+                        "dashboard_id": value
+                    }
+                }
+            }
+        }
+    }
+
+
+# PROJECTS
+
+
+def get_projects(host, port):
+    es = initialize_es(host, port)
+
+    response = es.security.get_role()
+    projects = [response_key[:-len("_dashboardReader")] for response_key in response.keys(
+    ) if response_key.endswith("_dashboardReader")]
+
+    return projects
 
 
 def is_project_exist(project, host, port):
@@ -173,6 +201,7 @@ def add_project(project_name, dashboards, host, port):
 
 
 def add_dashboard_to_projects(dashboard_id, projects, host, port):
+
     es = initialize_es(host, port)
 
     for project in projects:
@@ -184,35 +213,11 @@ def add_dashboard_to_projects(dashboard_id, projects, host, port):
         project_indices = list(
             project_role[project_role_name]["indices"][0]["names"])
 
-        project_indices.append(dashboard_id)
-
-        es.security.put_role(name=project_role_name, body={
-            'indices': [{
-                'names': project_indices,
-                'privileges': ["read"]
-            }]
-        }
-        )
-
-
-def remove_dashboard_from_projects(dashboard_id, host, port):
-    es = initialize_es(host, port)
-
-    response = es.security.get_role()
-    projects = [response_key for response_key in response.keys(
-    ) if response_key.endswith("_dashboardReader")]
-
-    logger.info(f'Removing {dashboard_id} from {len(projects)} projects')
-    for project in projects:
-        project_data = response[project]
-        project_indices = list(project_data["indices"][0]["names"])
-
         if dashboard_id in project_indices:
-            logger.info(f'Removing {dashboard_id} from {project}')
-
-            project_indices.remove(dashboard_id)
-
-            es.security.put_role(name=project, body={
+            continue
+        else:
+            project_indices.append(dashboard_id)
+            es.security.put_role(name=project_role_name, body={
                 'indices': [{
                     'names': project_indices,
                     'privileges': ["read"]
@@ -220,18 +225,54 @@ def remove_dashboard_from_projects(dashboard_id, host, port):
             }
             )
 
-#######
 
+def remove_dashboard_from_projects(dashboard_id, host, port, projects):
+    es = initialize_es(host, port)
 
-def fill_base_query(value):
-    return {
-        "query": {
-            "bool": {
-                "filter": {
-                    "term": {
-                        "dashboard_id": value
-                    }
+    if len(projects) > 0:
+        projects = [
+            f"{proj}_dashboardReader" for proj in projects]
+
+        logger.info(f'Removing {dashboard_id} from {len(projects)} projects')
+
+        for project in projects:
+            response = es.security.get_role(name=project)
+
+            project_data = response[project]
+            project_indices = list(project_data["indices"][0]["names"])
+
+            if dashboard_id in project_indices:
+                logger.info(f'Removing {dashboard_id} from {project}')
+
+                project_indices.remove(dashboard_id)
+
+                es.security.put_role(name=project, body={
+                    'indices': [{
+                        'names': project_indices,
+                        'privileges': ["read"]
+                    }]
                 }
-            }
-        }
-    }
+                )
+    else:
+        response = es.security.get_role()
+        projects = [response_key for response_key in response.keys(
+        ) if response_key.endswith("_dashboardReader")]
+
+        logger.info(f'Removing {dashboard_id} from {len(projects)} projects')
+
+        for project in projects:
+            project_data = response[project]
+            project_indices = list(project_data["indices"][0]["names"])
+
+            if dashboard_id in project_indices:
+                logger.info(f'Removing {dashboard_id} from {project}')
+
+                project_indices.remove(dashboard_id)
+
+                es.security.put_role(name=project, body={
+                    'indices': [{
+                        'names': project_indices,
+                        'privileges': ["read"]
+                    }]
+                }
+                )

@@ -24,7 +24,33 @@ def load_analysis(dashboard_id, projects, directory, host, port):
     logger.info("Done")
 
 
-def load_data(directory, dashboard_id, host, port):
+def load_merged_analysis(dashboard_id, projects, directory, host, port):
+
+    metadata_dir = os.path.join(
+        directory, constants.MERGED_DIRECTORYNAME, f'{dashboard_id}.json')
+
+    assert os.path.exists(
+        metadata_dir), f'Metadata file for {dashboard_id} does not exist in {os.path.join(directory, constants.MERGED_DIRECTORYNAME)}'
+
+    with open(metadata_dir) as metadata_file:
+        metadata = json.load(metadata_file)
+        libraries = metadata["libraries"]
+
+    add_columns = get_fitness_columns(
+        directory) if "Fitness" in projects else []
+
+    for library in libraries:
+        library_directory = os.path.join(directory, library)
+        load_data(library_directory, dashboard_id,
+                  host, port, add_columns=add_columns)
+
+    load_dashboard_entry(metadata_dir, dashboard_id,
+                         host, port, merged=True,)
+
+    add_dashboard_to_projects(dashboard_id, projects, host, port)
+
+
+def load_data(directory, dashboard_id, host, port, add_columns=[]):
     logger.info("LOADING DATA: " + dashboard_id)
 
     hmmcopy_data = collections.defaultdict(list)
@@ -43,7 +69,12 @@ def load_data(directory, dashboard_id, host, port):
 
         data = eval(f"get_{index_type}_data(hmmcopy_data)")
 
-        logger.info(f"dataframe for {index_name} has shape {data.shape}")
+        if index_type == "qc" and len(add_columns) > 0:
+            old_cell_count = data.shape[0]
+            column_df = pd.DataFrame(add_columns)
+            data = data.merge(column_df)
+            assert data.shape[0] == old_cell_count, "Missing cells after merge with new columns"
+
         load_records(data, index_name, host, port)
 
 
@@ -140,23 +171,54 @@ def clean_nans(record):
             del record[field]
 
 
-def load_dashboard_entry(directory, dashboard_id, host, port):
+def load_dashboard_entry(directory, dashboard_id, host, port, merged=None):
     logger.info("LOADING DASHBOARD ENTRY: " + dashboard_id)
-
-    metadata_filename = os.path.join(directory, constants.METADATA_FILENAME)
+    if merged:
+        metadata_filename = directory
+    else:
+        metadata_filename = os.path.join(
+            directory, constants.METADATA_FILENAME)
 
     with open(metadata_filename) as metadata_file:
         metadata = json.load(metadata_file)
 
-    for key in ["sample_id", "library_id", "description"]:
+    standard_keys = ["sample_id", "description"]
+
+    standard_keys.append(
+        "libraries") if merged else standard_keys.append("library_id")
+
+    for key in standard_keys:
         assert key in metadata.keys(), f"Missing {key} in metadata.json"
 
     record = {
-        "dashboard_id": dashboard_id,
-        "sample_id": metadata["sample_id"],
-        "library_id": metadata["library_id"],
-        "jira_id": dashboard_id,
-        "description": metadata["description"]
+        **metadata
     }
 
+    record["jira_id"] = dashboard_id
+    record["dashboard_id"] = dashboard_id
+    record["dashboard_type"] = "merged" if merged else "single"
+    # duplicate checking
     load_dashboard_record(record, dashboard_id, host, port)
+
+
+'''
+pass in an object which tells us what columns need to be relabeled
+what it needs to be joined on
+
+'''
+
+
+def get_fitness_columns(directory):
+    clone_df = pd.read_csv(os.path.join(
+        directory, constants.MERGED_DIRECTORYNAME, "fitness_cell_assignment.csv"))
+    clone_df = clone_df.rename(
+        columns={"single_cell_id": "cell_id", "letters": "clone_id"})
+    clone_df = clone_df[["cell_id", "clone_id"]]
+
+    order_df = pd.read_csv(os.path.join(
+        directory, constants.MERGED_DIRECTORYNAME, "cell_order.csv"))
+    order_df = order_df.rename(
+        columns={"label": "cell_id", "index": "order"})
+    order_df = order_df[["cell_id", "order"]]
+
+    return clone_df.merge(order_df).to_dict('records')
