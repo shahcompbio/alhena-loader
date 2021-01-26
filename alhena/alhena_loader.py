@@ -10,6 +10,9 @@ import numpy as np
 import alhena.constants as constants
 from alhena.elasticsearch import initialize_es, load_dashboard_record, load_records as _load_records, add_dashboard_to_projects
 from scgenome.loaders.qc import load_qc_data
+import scgenome.loaders.align
+import scgenome.loaders.hmmcopy
+import scgenome.loaders.annotation
 from scgenome.db.qc_from_files import get_qc_data_from_filenames
 import isabl_cli as ii
 
@@ -18,7 +21,26 @@ logger = logging.getLogger('alhena_loading')
 
 chr_prefixed = {str(a): '0' + str(a) for a in range(1, 10)}
 
-def load_analysis_msk(dashboard_id,projects, host, port):
+
+def load_analysis_from_dirs(dashboard_id, projects, host, port, alignment_dir, hmmcopy_dir, annotation_dir):
+    qc_data = scgenome.loaders.align.load_align_data(alignment_dir)
+
+    for table_name, data in scgenome.loaders.hmmcopy.load_hmmcopy_data(hmmcopy_dir).items():
+        qc_data[table_name] = data
+
+    for table_name, data in scgenome.loaders.annotation.load_annotation_data(annotation_dir).items():
+        qc_data[table_name] = data
+
+    load_data(dashboard_id, host, port, qc_data)
+
+    load_dashboard_entry_msk(dashboard_id, host, port)
+
+    add_dashboard_to_projects(dashboard_id, projects, host, port)
+
+    logger.info("Done")
+
+
+def load_analysis_msk(dashboard_id, projects, host, port):
     logger.info("====================== " + dashboard_id)
     #Main isabl data fetching
     hmmcopy_data =get_scgenome_isabl_data(dashboard_id)  
