@@ -39,30 +39,16 @@ def load_analysis_from_dirs(dashboard_id, projects, host, port, alignment_dir, h
 
     logger.info("Done")
 
-
-def load_analysis_msk(dashboard_id, projects, host, port):
+    
+def load_analysis(dashboard_id,data, projects, directory, host, port):
     logger.info("====================== " + dashboard_id)
-    #Main isabl data fetching
-    hmmcopy_data =get_scgenome_isabl_data(dashboard_id)  
-
-    load_data(dashboard_id, host, port,hmmcopy_data)
-
-    # load_dashboard_entry_msk has a different structure compared to bccrc
-    load_dashboard_entry_msk(dashboard_id, host, port)
-
-    #add_dashboard_to_projects is generic enough
-    add_dashboard_to_projects(dashboard_id, projects, host, port)
-    logger.info("Done")
-
-
-
-def load_analysis(dashboard_id, projects, directory, host, port):
-    logger.info("====================== " + dashboard_id)
-    hmmcopy_data = get_scgenome_colossus_tantalus_data(directory)
-    load_data( dashboard_id, host, port,hmmcopy_data)
+    load_data( dashboard_id, host, port,data)
     load_dashboard_entry(directory, dashboard_id, host, port)
     add_dashboard_to_projects(dashboard_id, projects, host, port)
     logger.info("Done")
+
+
+
 
 
 def load_merged_analysis(dashboard_id, projects, directory, host, port):
@@ -150,7 +136,7 @@ def get_scgenome_isabl_data(target_aliquot):
     os.environ["ISABL_API_URL"] = 'https://isabl.shahlab.mskcc.org/api/v1/'
     os.environ['ISABL_CLIENT_ID'] = '1'
     VERSION = "0.0.1"
-    '''
+    
 
     #code snippet to retrieve all experiments/test
     experiments = ii.get_instances(
@@ -159,14 +145,28 @@ def get_scgenome_isabl_data(target_aliquot):
     technique__slug='DNA|WG|Single Cell DNA Seq',
 
     )
-
-    #example experiment query + resulting pk numbers in experiment
-    #experiment = ii.Experiment("SHAH_H000034_T08_01_WG01",)
-    [4745, 4749, 4762]
-    [alignment.pk, hmmcopy.pk, annotation.pk]
+    num_bccrc = 0
+    num_IGO = 0
     
-    '''
+    for experiment in experiments:
+        alignment = get_analyses('SCDNA-ALIGNMENT', VERSION, experiment.system_id)
+        hmmcopy = get_analyses('SCDNA-HMMCOPY', VERSION, experiment.system_id)
+        annotation = get_analyses('SCDNA-ANNOTATION', VERSION, experiment.system_id)
+        print(alignment.pk, hmmcopy.pk, annotation.pk)
+        print(experiment.bccrc_sample_id)
+        # alignment.results
+        # alignment.targets[0].sample.individual.identifier
+        # alignment.targets[0].sample.identifier
+        # alignment.targets[0].aliquot_id
+        # alignment.storage_url
+        #example experiment query + resulting pk numbers in experiment
+        #experiment = ii.Experiment("SHAH_H000034_T08_01_WG01",)
+        #[4745, 4749, 4762]
+        #[alignment.pk, hmmcopy.pk, annotation.pk]
+    print(len(experiments))
+    
     #query via target aliquot
+    '''
     experiment = ii.get_instances("experiments", aliquot_id=target_aliquot)[0]
     
     alignment = get_analyses('SCDNA-ALIGNMENT', VERSION, experiment.system_id)
@@ -179,7 +179,7 @@ def get_scgenome_isabl_data(target_aliquot):
     annotation_metrics = get_annotation_path(annotation.pk)
     hmmcopy_metrics,hmmcopy_reads,hmmcopy_segs = get_hmmcopy_path(hmmcopy.pk)
     alignment_metrics, gc_metrics = get_alignment_path(alignment.pk)
-
+    '''
     '''
     print("annotation_metrics", annotation_metrics)
     print("hmmcopy_reads:",hmmcopy_reads)
@@ -188,7 +188,7 @@ def get_scgenome_isabl_data(target_aliquot):
     print("alignment_metrics:" ,alignment_metrics)
     print("gc_metrics:",gc_metrics)
     '''
-
+    '''
     results = get_qc_data_from_filenames(
         [annotation_metrics], [hmmcopy_reads], [hmmcopy_segs],
         [hmmcopy_metrics], [alignment_metrics], [gc_metrics]
@@ -202,7 +202,7 @@ def get_scgenome_isabl_data(target_aliquot):
         hmmcopy_data[table_name] = pd.concat(
             hmmcopy_data[table_name], ignore_index=True)
     return hmmcopy_data
-    
+    '''
  
 
 

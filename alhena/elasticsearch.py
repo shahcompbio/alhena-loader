@@ -131,10 +131,8 @@ def delete_records(index, filter_value, host="localhost", port=9200):
 
     if es.indices.exists(index):
         query = fill_base_query(filter_value)
-        es.delete_by_query(index=index, body=query, refresh=True)
+        resp = es.delete_by_query(index=index, body=query, refresh=True)
 
-
-#####
 
 def is_loaded(dashboard_id, host, port):
     es = initialize_es(host, port)
