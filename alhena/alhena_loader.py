@@ -78,137 +78,6 @@ def load_merged_analysis(dashboard_id, projects, directory, host, port):
     add_dashboard_to_projects(dashboard_id, projects, host, port)
 
 
-def get_scgenome_colossus_tantalus_data(directory):
-    hmmcopy_data = collections.defaultdict(list)
-
-    for table_name, data in load_qc_data(directory).items():
-        hmmcopy_data[table_name].append(data)
-    for table_name in hmmcopy_data:
-        hmmcopy_data[table_name] = pd.concat(
-            hmmcopy_data[table_name], ignore_index=True)
-
-    return hmmcopy_data
-
-def get_analyses(app, version, exp_system_id):
-    
-    analyses = ii.get_instances(
-        'analyses',
-        application__name=app,
-        application__version=version,
-        targets__system_id=exp_system_id
-    )
-    assert len(analyses) == 1
-    return analyses[0]
-
-'''
-    three getters below retrieve paths for scgenome function get_qc_data_from_filenames
-    which returns hmmcopy
-'''
-def get_alignment_path(pk):
-    alignment_data = ii.Analysis(pk)
-    alignment_metrics= alignment_data.results["alignment_metrics_csv"]
-    gc_metrics = alignment_data.results["gc_metrics"]
-    return alignment_metrics, gc_metrics
-
-def get_hmmcopy_path(pk):
-    hmmcopy_data = ii.Analysis(pk)
-    hmmcopy_metrics = hmmcopy_data.results["hmmcopy_metrics_csv"]
-    hmmcopy_reads = hmmcopy_data.results["reads"]
-    hmmcopy_segs= hmmcopy_data.results["segments"]
-    return hmmcopy_metrics,hmmcopy_reads,hmmcopy_segs
-
-def get_annotation_path(pk):
-    annotation_data = ii.Analysis(pk)
-    annotation_metrics = annotation_data.results["metrics"]
-    return annotation_metrics
-
-
-def get_target_aliquot_id(experiment):
-    experiment = ii.Experiment(experiment)
-    alignment = get_analyses('SCDNA-ALIGNMENT', VERSION, experiment.system_id)
-    target_aliquot = alignment.targets[0].aliquot_id
-    return target_aliquot
-
-def get_scgenome_isabl_data(target_aliquot):
-
-
-    APP_VERSION = '1.0.0'
-    os.environ["ISABL_API_URL"] = 'https://isabl.shahlab.mskcc.org/api/v1/'
-    os.environ['ISABL_CLIENT_ID'] = '1'
-    VERSION = "0.0.1"
-    
-
-    #code snippet to retrieve all experiments/test
-    experiments = ii.get_instances(
-    'experiments',
-    projects__title='SPECTRUM',
-    technique__slug='DNA|WG|Single Cell DNA Seq',
-
-    )
-    num_bccrc = 0
-    num_IGO = 0
-    
-    for experiment in experiments:
-        alignment = get_analyses('SCDNA-ALIGNMENT', VERSION, experiment.system_id)
-        hmmcopy = get_analyses('SCDNA-HMMCOPY', VERSION, experiment.system_id)
-        annotation = get_analyses('SCDNA-ANNOTATION', VERSION, experiment.system_id)
-        print(alignment.pk, hmmcopy.pk, annotation.pk)
-        print(experiment.bccrc_sample_id)
-        # alignment.results
-        # alignment.targets[0].sample.individual.identifier
-        # alignment.targets[0].sample.identifier
-        # alignment.targets[0].aliquot_id
-        # alignment.storage_url
-        #example experiment query + resulting pk numbers in experiment
-        #experiment = ii.Experiment("SHAH_H000034_T08_01_WG01",)
-        #[4745, 4749, 4762]
-        #[alignment.pk, hmmcopy.pk, annotation.pk]
-    print(len(experiments))
-    
-    #query via target aliquot
-    '''
-    experiment = ii.get_instances("experiments", aliquot_id=target_aliquot)[0]
-    
-    alignment = get_analyses('SCDNA-ALIGNMENT', VERSION, experiment.system_id)
-    hmmcopy = get_analyses('SCDNA-HMMCOPY', VERSION, experiment.system_id)
-    annotation = get_analyses('SCDNA-ANNOTATION', VERSION, experiment.system_id)
-
-    current = [alignment.pk, hmmcopy.pk, annotation.pk]
-
-    #retrieve paths
-    annotation_metrics = get_annotation_path(annotation.pk)
-    hmmcopy_metrics,hmmcopy_reads,hmmcopy_segs = get_hmmcopy_path(hmmcopy.pk)
-    alignment_metrics, gc_metrics = get_alignment_path(alignment.pk)
-    '''
-    '''
-    print("annotation_metrics", annotation_metrics)
-    print("hmmcopy_reads:",hmmcopy_reads)
-    print("hmmcopy_segs:" , hmmcopy_segs)
-    print("hmmcopy_metrics:",hmmcopy_metrics)
-    print("alignment_metrics:" ,alignment_metrics)
-    print("gc_metrics:",gc_metrics)
-    '''
-    '''
-    results = get_qc_data_from_filenames(
-        [annotation_metrics], [hmmcopy_reads], [hmmcopy_segs],
-        [hmmcopy_metrics], [alignment_metrics], [gc_metrics]
-    )
-
-    hmmcopy_data = collections.defaultdict(list)
-
-    for table_name, data in results.items():
-        hmmcopy_data[table_name].append(data)
-    for table_name in hmmcopy_data:
-        hmmcopy_data[table_name] = pd.concat(
-            hmmcopy_data[table_name], ignore_index=True)
-    return hmmcopy_data
-    '''
- 
-
-
- 
-
-
 
 def load_data( dashboard_id, host, port, data, add_columns=[]):
     logger.info("LOADING DATA: " + dashboard_id)
@@ -222,15 +91,14 @@ def load_data( dashboard_id, host, port, data, add_columns=[]):
         logger.info(f"Index {index_name}")
 
         data = eval(f"get_{index_type}_data(hmmcopy_data)")
-        '''
-        fitness case handler, ignore for now
+        
+        #fitness case handler, was commented out for MSK igo, bccrc load
         if index_type == "qc" and len(add_columns) > 0:
             old_cell_count = data.shape[0]
             column_df = pd.DataFrame(add_columns)
             data = data.merge(column_df)
             assert data.shape[0] == old_cell_count, "Missing cells after merge with new columns"
-        print(data.shape[0])
-        '''
+        
         load_records(data, index_name, host, port)
 
 
