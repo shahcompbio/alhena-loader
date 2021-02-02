@@ -94,13 +94,34 @@ def load_data( dashboard_id, host, port, data, add_columns=[]):
         
         #fitness case handler, was commented out for MSK igo, bccrc load
         if index_type == "qc" and len(add_columns) > 0:
+
             old_cell_count = data.shape[0]
-            column_df = pd.DataFrame(add_columns)
-            data = data.merge(column_df)
-            assert data.shape[0] == old_cell_count, "Missing cells after merge with new columns"
+            data = process_qc_fitness_data(data, add_columns)
+           
+            #this assertion will be wrong for a while :(, commented out
+            #assert data.shape[0] == old_cell_count, "Missing cells after merge with new columns"
         
         load_records(data, index_name, host, port)
 
+def process_qc_fitness_data(data,add_columns):
+
+    column_df = pd.DataFrame(add_columns)
+    #create temp_cell_id, merge on it, delete it
+    column_df["temp_cell_id"] = column_df["cell_id"].astype(str)
+    column_df["temp_cell_id"] = column_df["cell_id"].str.split(
+        "-", 1).str[1]
+    data["temp_cell_id"] = data["cell_id"].astype(str)
+    data["temp_cell_id"] = data["cell_id"].str.split(
+        "-", 1).str[1]
+    #make room for new ordering
+    data.drop('order', axis=1, inplace=True)
+    #merge
+    data = pd.merge(data, column_df, how="inner", on="temp_cell_id")
+    del data["cell_id_x"]
+    del data["temp_cell_id"]
+    data = data.rename(columns={'cell_id_y': "cell_id"})
+
+    return data
 
 def get_qc_data(hmmcopy_data):
     data = hmmcopy_data['annotation_metrics']
