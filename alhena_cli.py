@@ -3,6 +3,9 @@ import logging
 import logging.handlers
 import os
 
+import alhena.alhena_loader
+
+# Not sure why youre doing imports this way...
 from alhena.alhena_loader import load_analysis as _load_analysis, load_merged_analysis as _load_merged_analysis, load_analysis_msk as _load_analysis_msk
 from alhena.alhena_data import download_analysis as _download_analysis, download_libraries_for_merged as _download_libraries_for_merged
 from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded, is_project_exist as _is_project_exist, initialize_indices as _initialize_es_indices, add_project as _add_project, get_projects as _get_projects, add_dashboard_to_projects as _add_dashboard_to_projects
@@ -59,6 +62,33 @@ def load_analysis(ctx, data_directory, id, projects, reload):
         _clean_analysis(id, host=es_host, port=es_port)
 
     _load_analysis(id, projects, data_directory, es_host, es_port)
+
+
+@main.command()
+@click.argument('alignment_dir')
+@click.argument('hmmcopy_dir')
+@click.argument('annotation_dir')
+@click.pass_context
+@click.option('--id', help="ID of dashboard", required=True)
+@click.option('--project', 'projects', multiple=True, default=["DLP"], help="Projects to load dashboard into")
+@click.option('--reload', is_flag=True, help="Force reload this dashboard")
+def load_analysis_from_dirs(ctx, alignment_dir, hmmcopy_dir, annotation_dir, id, projects, reload):
+    es_host = ctx.obj['host']
+    es_port = ctx.obj["port"]
+
+    assert reload or not _is_loaded(
+        id, es_host, es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
+
+    nonexistant_projects = [project for project in projects if not _is_project_exist(
+        project, es_host, es_port)]
+
+    assert len(
+        nonexistant_projects) == 0, f'Projects do not exist: {nonexistant_projects} '
+
+    if reload:
+        _clean_analysis(id, host=es_host, port=es_port)
+
+    alhena.alhena_loader.load_analysis_from_dirs(id, projects, es_host, es_port, alignment_dir, hmmcopy_dir, annotation_dir)
 
 
 @main.command()
