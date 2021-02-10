@@ -22,7 +22,11 @@ logger = logging.getLogger('alhena_loading')
 chr_prefixed = {str(a): '0' + str(a) for a in range(1, 10)}
 
 
+
+
+
 def load_analysis_from_dirs(dashboard_id, projects, host, port, alignment_dir, hmmcopy_dir, annotation_dir):
+    
     qc_data = scgenome.loaders.align.load_align_data(alignment_dir)
 
     for table_name, data in scgenome.loaders.hmmcopy.load_hmmcopy_data(hmmcopy_dir).items():
@@ -32,18 +36,17 @@ def load_analysis_from_dirs(dashboard_id, projects, host, port, alignment_dir, h
         qc_data[table_name] = data
 
     load_data(dashboard_id, host, port, qc_data)
-
-    load_dashboard_entry_msk(dashboard_id, host, port)
-
+    
+    analysis_record = get_isabl_analysis_object(dashboard_id)
+    load_dashboard_entry(analysis_record,dashboard_id, host, port )
     add_dashboard_to_projects(dashboard_id, projects, host, port)
 
     logger.info("Done")
 
-    
-def load_analysis(dashboard_id,data, projects, directory, host, port):
+def load_analysis(dashboard_id,data,analysis_record, projects, directory, host, port):
     logger.info("====================== " + dashboard_id)
-    load_data( dashboard_id, host, port,data)
-    load_dashboard_entry(directory, dashboard_id, host, port)
+    load_data(dashboard_id, host, port,data)
+    load_dashboard_entry(analysis_record,dashboard_id, host, port )
     add_dashboard_to_projects(dashboard_id, projects, host, port)
     logger.info("Done")
 
@@ -72,8 +75,10 @@ def load_merged_analysis(dashboard_id, projects, directory, host, port):
         load_data(dashboard_id,
                   host, port, hmmcopy_data, add_columns=add_columns)
 
-    load_dashboard_entry(metadata_dir, dashboard_id,
-                         host, port, merged=True,)
+    analysis_record = get_colossus_tantalus_analysis_object(directory, dashboard_id,merged= True)
+
+    load_dashboard_entry(analysis_record, dashboard_id,
+                     host, port, merged=True,)
 
     add_dashboard_to_projects(dashboard_id, projects, host, port)
 
@@ -85,7 +90,7 @@ def load_data( dashboard_id, host, port, data, add_columns=[]):
     hmmcopy_data = data
 
     logger.info(f'loading hmmcopy data with tables {hmmcopy_data.keys()}')
-
+    print(hmmcopy_data)
     for index_type in constants.DATA_TYPES:
         index_name = f"{dashboard_id.lower()}_{index_type}"
         logger.info(f"Index {index_name}")
@@ -93,6 +98,7 @@ def load_data( dashboard_id, host, port, data, add_columns=[]):
         data = eval(f"get_{index_type}_data(hmmcopy_data)")
         
         #fitness case handler, was commented out for MSK igo, bccrc load
+        '''
         if index_type == "qc" and len(add_columns) > 0:
 
             old_cell_count = data.shape[0]
@@ -100,7 +106,7 @@ def load_data( dashboard_id, host, port, data, add_columns=[]):
            
             #this assertion will be wrong for a while :(, commented out
             #assert data.shape[0] == old_cell_count, "Missing cells after merge with new columns"
-        
+        '''
         load_records(data, index_name, host, port)
 
 def process_qc_fitness_data(data,add_columns):
@@ -216,62 +222,9 @@ def clean_nans(record):
             del record[field]
 
 
-def load_dashboard_entry_msk(dashboard_id, host, port,):
-    logger.info("LOADING DASHBOARD ENTRY: " + dashboard_id)
-    '''
-    example Object
-        { 
-    "sample_id" : "TEST", 
-    "library_id" : "TEST", 
-    "jira_id" : target_aliquot or whatever is the name of the dashboard_id, 
-    "description" : "TEST" 
-    } 
 
-    '''
-
-    record = {
-        "sample_id": "test_sample",
-        "jira_id":dashboard_id,
-        "library_id":"test_library",
-        "description":"MSK Isabl Data Loading"
-    }
-
-    # duplicate checking
-    load_dashboard_record(record, dashboard_id, host, port)
-
-
-def load_dashboard_entry(directory, dashboard_id, host, port, merged=None):
-    #just to make it work!
-    '''
-    takes the last 4 args and makes an object that works for msk end to end
-    sample_id/library_id have dummy data but as long as jira_id has target_aliquot
-
-    '''
-    logger.info("LOADING DASHBOARD ENTRY: " + dashboard_id)
-    if merged:
-        metadata_filename = directory
-    else:
-        metadata_filename = os.path.join(
-            directory, constants.METADATA_FILENAME)
-
-    with open(metadata_filename) as metadata_file:
-        metadata = json.load(metadata_file)
-
-    standard_keys = ["sample_id", "description"]
-
-    standard_keys.append(
-        "libraries") if merged else standard_keys.append("library_id")
-
-    for key in standard_keys:
-        assert key in metadata.keys(), f"Missing {key} in metadata.json"
-
-    record = {
-        **metadata
-    }
-
-    record["jira_id"] = dashboard_id
-    record["dashboard_id"] = dashboard_id
-    record["dashboard_type"] = "merged" if merged else "single"
+def load_dashboard_entry(analysis_object, dashboard_id, host, port):
+    record = analysis_object
     # duplicate checking
     load_dashboard_record(record, dashboard_id, host, port)
 
@@ -281,7 +234,6 @@ pass in an object which tells us what columns need to be relabeled
 what it needs to be joined on
 
 '''
-
 
 def get_fitness_columns(directory):
     clone_df = pd.read_csv(os.path.join(
@@ -297,3 +249,14 @@ def get_fitness_columns(directory):
     order_df = order_df[["cell_id", "order"]]
 
     return clone_df.merge(order_df).to_dict('records')
+
+def get_custom_analysis_object(dashboard_id):
+    
+    record = {
+        "sample_id": "",
+        "jira_id":dashboard_id,
+        "library_id":"",
+        "description":""
+
+    }
+    return record

@@ -42,7 +42,9 @@ def get_scgenome_isabl_data(target_aliquot):
 
     for table_name, data in results.items():
         hmmcopy_data[table_name].append(data)
-
+    for table_name in hmmcopy_data:
+        hmmcopy_data[table_name] = pd.concat(
+            hmmcopy_data[table_name], ignore_index=True)
     
     return hmmcopy_data
 
@@ -78,3 +80,32 @@ def get_annotation_path(pk):
     return annotation_metrics
 
 
+def get_isabl_analysis_object(annotation_pk):
+    APP_VERSION = '1.0.0'
+    os.environ["ISABL_API_URL"] = 'https://isabl.shahlab.mskcc.org/api/v1/'
+    os.environ['ISABL_CLIENT_ID'] = '1'
+    VERSION = "0.0.1"
+    
+    #experiment = ii.get_instances("experiments", aliquot_id=target_aliquot)
+    project = ii.get_instance("analyses",int(annotation_pk))
+
+    experiment = project["targets"][0]
+  
+    record = {  
+        "sample_id" : experiment["sample"]["identifier"],  
+        "library_id" : experiment["library_id"],  
+        "jira_id" : annotation_pk,  
+        "description" : experiment["aliquot_id"]
+        } 
+    return record
+    
+def get_scgenome_isabl_annotation_pk(target_aliquot):
+    APP_VERSION = '1.0.0'
+    os.environ["ISABL_API_URL"] = 'https://isabl.shahlab.mskcc.org/api/v1/'
+    os.environ['ISABL_CLIENT_ID'] = '1'
+    VERSION = "0.0.1"
+    
+    experiment = ii.get_instances("experiments", aliquot_id=target_aliquot)[0]
+
+    alignment = get_analyses('SCDNA-ALIGNMENT', VERSION, experiment.system_id)
+    return alignment.pk

@@ -69,9 +69,10 @@ def initialize_indices(host, port):
 
 def load_dashboard_record(record, dashboard_id, host, port):
     logger.info("Creating analysis object")
-    load_record(record, dashboard_id,
+    resp = load_record(record, dashboard_id,
                 constants.DASHBOARD_ENTRY_INDEX, host, port)
-
+    print(resp)
+    print(constants.DASHBOARD_ENTRY_INDEX, dashboard_id, record)
 
 def load_records(records, index_name, host, port, mapping=DEFAULT_MAPPING):
     es = initialize_es(host, port)
@@ -97,8 +98,11 @@ def load_record(record, record_id, index, host, port, mapping=DEFAULT_MAPPING):
         es.indices.create(index=index, body=mapping)
 
     logger.info(f'Loading record')
-    es.index(index=index, id=record_id, body=record)
-
+    resp = es.index(index=index, id=record_id, body=record)
+    print("THE RESPONSE")
+    print(resp)
+    print(index, record_id,record)
+    print('')
 
 ###########
 
