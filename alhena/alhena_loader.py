@@ -21,37 +21,79 @@ logger = logging.getLogger('alhena_loading')
 
 chr_prefixed = {str(a): '0' + str(a) for a in range(1, 10)}
 
+data_caller_map = {
+    "qc": "get_qc_data", 
+    "segs": "get_segs_data", 
+    "bins": "get_bins_data", 
+    "gc_bias": "get_gc_bias_data"
+}
+
+## load single analysis from single directory
+## load single analysis from multiple directories
+## load merged analysis from multiple single analyses
 
 
-
-
-def load_analysis_from_dirs(dashboard_id, projects, host, port, alignment_dir, hmmcopy_dir, annotation_dir):
-    
-    qc_data = scgenome.loaders.align.load_align_data(alignment_dir)
-
-    for table_name, data in scgenome.loaders.hmmcopy.load_hmmcopy_data(hmmcopy_dir).items():
-        qc_data[table_name] = data
-
-    for table_name, data in scgenome.loaders.annotation.load_annotation_data(annotation_dir).items():
-        qc_data[table_name] = data
-
-    load_data(dashboard_id, host, port, qc_data)
-    
-    analysis_record = get_isabl_analysis_object(dashboard_id)
-    load_dashboard_entry(analysis_record,dashboard_id, host, port )
-    add_dashboard_to_projects(dashboard_id, projects, host, port)
-
-    logger.info("Done")
-
-def load_analysis(dashboard_id,data,analysis_record, projects, directory, host, port):
+def load_single_analysis_from_dir(dashboard_id, directory, projects, host, port, add_columns=[], analysis_record=None):
     logger.info("====================== " + dashboard_id)
-    load_data(dashboard_id, host, port,data)
-    load_dashboard_entry(analysis_record,dashboard_id, host, port )
+    logger.info(f'======= LOAD FROM DIRECTORY: {directory}')
+
+    if analysis_record is None:
+        analysis_metadata_path = os.path.join(directory, constants.METADATA_FILENAME)
+
+        assert os.path.exists(analysis_metadata_path), f'Analysis object not given'
+
+        with open(metadata_filename) as metadata_file:
+            analysis_record = json.load(metadata_file)
+            analysis_record["jira_id"] = dashboard_id
+            analysis_record["dashboard_id"] = dashboard_id
+            analysis_record["dashboard_type"] = constants.SINGLE_DASHBOARD_TYPE
+
+    data = load_qc_data(directory)
+    load_data(data, dashboard_id, host, port, add_columns=add_columns)
+    load_dashboard_entry(analysis_record, dashboard_id, host, port)
+    add_dashboard_to_projects(dashboard_id, projects, host, port)
+    logger.info("Done")
+    
+
+def load_single_analysis_from_dirs(dashboard_id, alignment_dir, hmmcopy_dir, annotation_dir, analysis_record, projects, host, port, add_columns=[]):
+    logger.info("====================== " + dashboard_id)
+    logger.info(f'======= LOAD FROM DIRECTORIES:')
+    logger.info(f'== Alignment: {alignment_dir}')
+    logger.info(f'== HmmCopy: {hmmcopy_dir}')
+    logger.info(f'== Annotation: {annotation_dir}')
+
+    data = scgenome.loaders.align.load_align_data(alignment_dir)
+
+    for table_name, table_data in scgenome.loaders.hmmcopy.load_hmmcopy_data(hmmcopy_dir).items():
+        data[table_name] = table_data
+
+    for table_name, table_data in scgenome.loaders.annotation.load_annotation_data(annotation_dir).items():
+        data[table_name] = table_data
+
+    load_data(data, dashboard_id, host, port, add_columns=add_columns)
+    load_dashboard_entry(analysis_record, dashboard_id, host, port)
     add_dashboard_to_projects(dashboard_id, projects, host, port)
     logger.info("Done")
 
 
+## assume structure underneath directory:
+## directory
+##  - library #1
+##  - library #2
+##  - ...
 
+def load_merged_analysis_from_libraries(dashboard_id, directory, libraries, directory, analysis_record, add_columns, projects, host, port):
+
+    for library in libraries:
+        library_directory = os.path.join(directory, library)
+
+        data = load_qc_data(library_directory)
+        load_data(data, dashboard_id, host, port, add_columns=add_columns)
+
+    load_dashboard_entry(analysis_record, dashboard_id, host, port)
+    add_dashboard_to_projects(dashboard_id, projects, host, port)
+
+    
 
 
 def load_merged_analysis(dashboard_id, projects, directory, host, port):
@@ -84,30 +126,31 @@ def load_merged_analysis(dashboard_id, projects, directory, host, port):
 
 
 
-def load_data( dashboard_id, host, port, data, add_columns=[]):
+def load_data(data, dashboard_id, host, port, add_columns=[]):
     logger.info("LOADING DATA: " + dashboard_id)
 
     hmmcopy_data = data
 
     logger.info(f'loading hmmcopy data with tables {hmmcopy_data.keys()}')
-    print(hmmcopy_data)
-    for index_type in constants.DATA_TYPES:
-        index_name = f"{dashboard_id.lower()}_{index_type}"
+
+    for data_type, get_data in data_caller_map.items():
+        index_name = f"{dashboard_id.lower()}_{data_type}"
         logger.info(f"Index {index_name}")
 
-        data = eval(f"get_{index_type}_data(hmmcopy_data)")
-        
-        #fitness case handler, was commented out for MSK igo, bccrc load
-        '''
-        if index_type == "qc" and len(add_columns) > 0:
+        data = get_data(hmmcopy_data)
 
-            old_cell_count = data.shape[0]
-            data = process_qc_fitness_data(data, add_columns)
-           
-            #this assertion will be wrong for a while :(, commented out
-            #assert data.shape[0] == old_cell_count, "Missing cells after merge with new columns"
-        '''
+        if data_type == "qc" and len(add_columns) > 0:
+            data = merge_qc_columns(data, add_columns)
+
         load_records(data, index_name, host, port)
+
+
+def merge_qc_columns(data, add_columns):
+
+    column_df = pd.DataFrame(add_columns)
+    data = pd.merge(data, column_df, how="inner", on="cell_id")
+
+    return data
 
 def process_qc_fitness_data(data,add_columns):
 
@@ -225,6 +268,8 @@ def clean_nans(record):
 
 def load_dashboard_entry(analysis_object, dashboard_id, host, port):
     record = analysis_object
+    record["dashboard_id"] = dashboard_id
+    record["jira_id"] = dashboard_id
     # duplicate checking
     load_dashboard_record(record, dashboard_id, host, port)
 

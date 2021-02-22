@@ -1,7 +1,9 @@
 
 DASHBOARD_ENTRY_INDEX = "analyses"
-DATA_TYPES = ["qc", "segs", "bins", "gc_bias"]
 METADATA_FILENAME = "metadata.json"
 MERGED_DIRECTORYNAME = "merged"
+
+SINGLE_DASHBOARD_TYPE = "single"
+MERGED_DASHBOARD_TYPE = "merged"
 
 COLOSSUS_BASE_URL = "https://colossus.canadacentral.cloudapp.azure.com/api"
