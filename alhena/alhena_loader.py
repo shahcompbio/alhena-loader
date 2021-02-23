@@ -15,6 +15,7 @@ import scgenome.loaders.hmmcopy
 import scgenome.loaders.annotation
 from scgenome.db.qc_from_files import get_qc_data_from_filenames
 import isabl_cli as ii
+from alhena.tantalus_colossus import get_colossus_tantalus_data, get_colossus_tantalus_analysis_object
 
 
 logger = logging.getLogger('alhena_loading')
@@ -71,14 +72,14 @@ def load_merged_analysis(dashboard_id, projects, directory, host, port):
 
     for library in libraries:
         library_directory = os.path.join(directory, library)
-        hmmcopy_data = get_scgenome_colossus_tantalus_data(directory)
+        hmmcopy_data = get_colossus_tantalus_data(library_directory)
         load_data(dashboard_id,
                   host, port, hmmcopy_data, add_columns=add_columns)
 
-    analysis_record = get_colossus_tantalus_analysis_object(directory, dashboard_id,merged= True)
+    analysis_record = get_colossus_tantalus_analysis_object(metadata_dir, dashboard_id,merged= True)
 
     load_dashboard_entry(analysis_record, dashboard_id,
-                     host, port, merged=True,)
+                     host, port)
 
     add_dashboard_to_projects(dashboard_id, projects, host, port)
 
@@ -98,7 +99,7 @@ def load_data( dashboard_id, host, port, data, add_columns=[]):
         data = eval(f"get_{index_type}_data(hmmcopy_data)")
         
         #fitness case handler, was commented out for MSK igo, bccrc load
-        '''
+        
         if index_type == "qc" and len(add_columns) > 0:
 
             old_cell_count = data.shape[0]
@@ -106,7 +107,7 @@ def load_data( dashboard_id, host, port, data, add_columns=[]):
            
             #this assertion will be wrong for a while :(, commented out
             #assert data.shape[0] == old_cell_count, "Missing cells after merge with new columns"
-        '''
+    
         load_records(data, index_name, host, port)
 
 def process_qc_fitness_data(data,add_columns):

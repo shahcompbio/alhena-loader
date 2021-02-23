@@ -9,6 +9,7 @@ import scipy.stats
 import pandas as pd
 import numpy as np
 import alhena.constants as constants
+from scgenome.loaders.qc import load_qc_data
 
 
 def get_colossus_tantalus_data(directory):
@@ -16,11 +17,13 @@ def get_colossus_tantalus_data(directory):
 
     for table_name, data in load_qc_data(directory).items():
         hmmcopy_data[table_name].append(data)
-
+    for table_name in hmmcopy_data:
+        hmmcopy_data[table_name] = pd.concat(
+            hmmcopy_data[table_name], ignore_index=True)
     return hmmcopy_data
 
 def get_colossus_tantalus_analysis_object(directory, dashboard_id, merged=None):
-     if merged:
+    if merged:
         metadata_filename = directory
     else:
         metadata_filename = os.path.join(
