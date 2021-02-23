@@ -3,9 +3,16 @@ import logging
 import logging.handlers
 import os
 
+import alhena.alhena_loader
+
+# Not sure why youre doing imports this way...
 from alhena.alhena_loader import load_analysis as _load_analysis, load_merged_analysis as _load_merged_analysis
 from alhena.alhena_data import download_analysis as _download_analysis, download_libraries_for_merged as _download_libraries_for_merged
 from alhena.elasticsearch import clean_analysis as _clean_analysis, is_loaded as _is_loaded, is_project_exist as _is_project_exist, initialize_indices as _initialize_es_indices, add_project as _add_project, get_projects as _get_projects, add_dashboard_to_projects as _add_dashboard_to_projects
+
+from alhena.isabl import get_scgenome_isabl_data as _get_scgenome_isabl_data, get_scgenome_isabl_annotation_pk as _get_scgenome_isabl_annotation_pk, get_isabl_analysis_object as _get_isabl_analysis_object
+from alhena.tantalus_colossus import get_colossus_tantalus_data as _get_colossus_tantalus_data, get_colossus_tantalus_analysis_object as _get_colossus_tantalus_analysis_object
+
 import alhena.constants as constants
 
 LOGGING_FORMAT = "%(asctime)s - %(levelname)s - %(funcName)s - %(message)s"
@@ -58,7 +65,39 @@ def load_analysis(ctx, data_directory, id, projects, reload):
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
 
-    _load_analysis(id, projects, data_directory, es_host, es_port)
+    hmmcopy_data = _get_scgenome_colossus_tantalus_data(data_directory)
+    analysis_record = _get_colossus_tantalus_analysis_object(data_directory, dashboard_id)
+
+    _load_analysis(id,hmmcopy_data,analysis_record, projects, data_directory, es_host, es_port)
+
+
+@main.command()
+@click.argument('alignment_dir')
+@click.argument('hmmcopy_dir')
+@click.argument('annotation_dir')
+@click.pass_context
+@click.option('--id', help="ID of dashboard", required=True)
+@click.option('--project', 'projects', multiple=True, default=["DLP"], help="Projects to load dashboard into")
+@click.option('--reload', is_flag=True, help="Force reload this dashboard")
+def load_analysis_from_dirs(ctx, alignment_dir, hmmcopy_dir, annotation_dir, id, projects, reload):
+    #is this for msk? for isabl or tantalus, i guess it was igo aka isabl
+    #andrew's function, going to keep it here for when he sends over one-off data sets
+    es_host = ctx.obj['host']
+    es_port = ctx.obj["port"]
+      
+    assert reload or not _is_loaded(
+        id, es_host, es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
+
+    nonexistant_projects = [project for project in projects if not _is_project_exist(
+        project, es_host, es_port)]
+
+    assert len(
+        nonexistant_projects) == 0, f'Projects do not exist: {nonexistant_projects} '
+
+    if reload:
+        _clean_analysis(id, host=es_host, port=es_port)
+    
+    alhena.alhena_loader.load_analysis_from_dirs(id, projects, es_host, es_port, alignment_dir, hmmcopy_dir, annotation_dir)
 
 
 @main.command()
@@ -86,6 +125,41 @@ def load_merged_analysis(ctx, data_directory, id, projects, reload):
     _load_merged_analysis(id, projects,
                           data_directory, es_host, es_port)
 
+
+@main.command()
+#@click.argument('data_directory')
+@click.pass_context
+@click.option('--id', help="Experiment to get target aliquot ID of dashboard", required=True)
+@click.option('--project', 'projects', multiple=True, default=["DLP"], help="Projects to load dashboard into")
+@click.option('--reload', is_flag=True, help="Force reload this dashboard")
+def load_analysis_msk(ctx, id, projects, reload):
+
+    es_host = ctx.obj['host']
+    es_port = ctx.obj["port"]
+    
+    annotation_pk = _get_scgenome_isabl_annotation_pk(id)
+    #hmmcopy_data = None
+    hmmcopy_data = _get_scgenome_isabl_data(id)
+    print(f'{id} is now {str(annotation_pk)}')
+
+    id = str(annotation_pk)    
+
+
+    assert reload or not _is_loaded(
+    id, es_host, es_port), f'Dashboard with ID {id} already loaded. To reload, add --reload to command'
+
+    nonexistent_projects = [project for project in projects if not _is_project_exist(
+        project, es_host, es_port)]
+
+    assert len(
+        nonexistent_projects) == 0, f'Projects do not exist: {nonexistent_projects} '
+    
+    if reload:
+        _clean_analysis(id, host=es_host, port=es_port)
+
+    analysis_record = _get_isabl_analysis_object(id)
+
+    _load_analysis(dashboard_id,hmmcopy_data, analysis_record, projects, host, port)
 
 @main.command()
 @click.argument('data_directory')
@@ -146,7 +220,9 @@ def load_analysis_shah(ctx, data_directory, id, projects, download, reload):
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
 
-    _load_analysis(id, projects, data_directory, es_host, es_port)
+    hmmcopy_data = _get_scgenome_colossus_tantalus_data(data_directory)
+    analysis_record = _get_colossus_tantalus_analysis_object(directory, dashboard_id)
+    _load_analysis(id, hmmcopy_data, analysis_record, projects, data_directory, es_host, es_port)
 
 
 @main.command()
@@ -227,7 +303,9 @@ def load_dashboard(ctx, data_directory, id, projects, download, reload):
             _load_merged_analysis(id, projects,
                                   data_directory, es_host, es_port)
         elif download_type == "single":
-            _load_analysis(id, projects, data_directory, es_host, es_port)
+            hmmcopy_data = _get_scgenome_colossus_tantalus_data(data_directory)
+            analysis_record = __get_colossus_tantalus_analysis_object(directory, dashboard_id)
+            _load_analysis(id, hmmcopy_data, analysis_record, projects, data_directory, es_host, es_port)
 
 
 @ main.command()
