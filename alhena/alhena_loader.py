@@ -115,10 +115,10 @@ def process_qc_fitness_data(data,add_columns):
     column_df = pd.DataFrame(add_columns)
     #create temp_cell_id, merge on it, delete it
     column_df["temp_cell_id"] = column_df["cell_id"].astype(str)
-    column_df["temp_cell_id"] = column_df["cell_id"].str.split(
+    column_df["temp_cell_id"] = column_df["temp_cell_id"].str.split(
         "-", 1).str[1]
     data["temp_cell_id"] = data["cell_id"].astype(str)
-    data["temp_cell_id"] = data["cell_id"].str.split(
+    data["temp_cell_id"] = data["temp_cell_id"].str.split(
         "-", 1).str[1]
     #make room for new ordering
     data.drop('order', axis=1, inplace=True)
@@ -244,10 +244,10 @@ def get_fitness_columns(directory):
     clone_df = clone_df[["cell_id", "clone_id"]]
 
     order_df = pd.read_csv(os.path.join(
-        directory, constants.MERGED_DIRECTORYNAME, "cell_order.csv"))
-    order_df = order_df.rename(
-        columns={"label": "cell_id", "index": "order"})
-    order_df = order_df[["cell_id", "order"]]
+        directory, constants.MERGED_DIRECTORYNAME, "merged_ordering.csv"))
+    # order_df = order_df.rename(
+    #     columns={"label": "cell_id", "index": "order"})
+    # order_df = order_df[["cell_id", "order"]]
 
     return clone_df.merge(order_df).to_dict('records')
 
