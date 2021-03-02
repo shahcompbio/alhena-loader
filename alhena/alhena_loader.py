@@ -71,17 +71,18 @@ def load_merged_analysis(dashboard_id, projects, directory, host, port):
         directory) if "Fitness" in projects else []
 
     for library in libraries:
+        print(library)
         library_directory = os.path.join(directory, library)
-        hmmcopy_data = get_colossus_tantalus_data(library_directory)
+        hmmcopy_data = load_qc_data(library_directory)
         load_data(dashboard_id,
                   host, port, hmmcopy_data, add_columns=add_columns)
 
-    analysis_record = get_colossus_tantalus_analysis_object(metadata_dir, dashboard_id,merged= True)
+    # analysis_record = get_colossus_tantalus_analysis_object(metadata_dir, dashboard_id,merged= True)
 
-    load_dashboard_entry(analysis_record, dashboard_id,
-                     host, port)
+    # load_dashboard_entry(analysis_record, dashboard_id,
+    #                  host, port)
 
-    add_dashboard_to_projects(dashboard_id, projects, host, port)
+    # add_dashboard_to_projects(dashboard_id, projects, host, port)
 
 
 
@@ -91,8 +92,8 @@ def load_data( dashboard_id, host, port, data, add_columns=[]):
     hmmcopy_data = data
 
     logger.info(f'loading hmmcopy data with tables {hmmcopy_data.keys()}')
-    print(hmmcopy_data)
-    for index_type in constants.DATA_TYPES:
+
+    for index_type in ["qc"]: #constants.DATA_TYPES:
         index_name = f"{dashboard_id.lower()}_{index_type}"
         logger.info(f"Index {index_name}")
 
@@ -105,29 +106,32 @@ def load_data( dashboard_id, host, port, data, add_columns=[]):
             old_cell_count = data.shape[0]
             data = process_qc_fitness_data(data, add_columns)
            
+            # print(old_cell_count)
+            # print(data.shape[0])
             #this assertion will be wrong for a while :(, commented out
             #assert data.shape[0] == old_cell_count, "Missing cells after merge with new columns"
     
         load_records(data, index_name, host, port)
 
 def process_qc_fitness_data(data,add_columns):
-
+    print(len(data["order"].unique()))
     column_df = pd.DataFrame(add_columns)
     #create temp_cell_id, merge on it, delete it
     column_df["temp_cell_id"] = column_df["cell_id"].astype(str)
-    column_df["temp_cell_id"] = column_df["temp_cell_id"].str.split(
+    column_df["temp_cell_id"] = column_df["cell_id"].str.split(
         "-", 1).str[1]
     data["temp_cell_id"] = data["cell_id"].astype(str)
-    data["temp_cell_id"] = data["temp_cell_id"].str.split(
+    data["temp_cell_id"] = data["cell_id"].str.split(
         "-", 1).str[1]
+
     #make room for new ordering
-    data.drop('order', axis=1, inplace=True)
+    del data['order']
     #merge
     data = pd.merge(data, column_df, how="inner", on="temp_cell_id")
     del data["cell_id_x"]
     del data["temp_cell_id"]
     data = data.rename(columns={'cell_id_y': "cell_id"})
-
+    print(len(data["order"].unique()))
     return data
 
 def get_qc_data(hmmcopy_data):
@@ -238,7 +242,7 @@ what it needs to be joined on
 
 def get_fitness_columns(directory):
     clone_df = pd.read_csv(os.path.join(
-        directory, constants.MERGED_DIRECTORYNAME, "fitness_cell_assignment.csv"))
+        directory, constants.MERGED_DIRECTORYNAME, "fitness_cell_assignment_feb07_2020.tsv"))
     clone_df = clone_df.rename(
         columns={"single_cell_id": "cell_id", "letters": "clone_id"})
     clone_df = clone_df[["cell_id", "clone_id"]]
@@ -247,7 +251,7 @@ def get_fitness_columns(directory):
         directory, constants.MERGED_DIRECTORYNAME, "merged_ordering.csv"))
     # order_df = order_df.rename(
     #     columns={"label": "cell_id", "index": "order"})
-    # order_df = order_df[["cell_id", "order"]]
+    order_df = order_df[["cell_id", "order"]]
 
     return clone_df.merge(order_df).to_dict('records')
 

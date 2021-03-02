@@ -273,6 +273,42 @@ def all_projects(ctx):
 @click.option('--project', 'projects', multiple=True, default=["DLP"], help="Projects to load dashboard into")
 @click.option('--download', is_flag=True, help="Download data")
 @click.option('--reload', is_flag=True, help="Force reload this dashboard")
+def load_qc(ctx, data_directory, id, projects, download, reload):
+    es_host = ctx.obj['host']
+    es_port = ctx.obj["port"]
+    # nonexistant_projects = [project for project in projects if not _is_project_exist(
+    #     project, es_host, es_port)]
+
+    # assert len(
+    #     nonexistant_projects) == 0, f'Projects do not exist: {nonexistant_projects} '
+
+    # download_type = "merged" if os.path.exists(os.path.join(
+    #     data_directory, constants.MERGED_DIRECTORYNAME, f"{id}.json")) else "single"
+
+    # if download:
+    #     if download_type == "merged":
+    #         _download_libraries_for_merged(id, data_directory)
+    #     elif download_type == "single":
+    #         data_directory = _download_analysis(
+    #             id, data_directory)
+
+    if reload:
+        alhena.elasticsearch.delete_index(f"{id.lower()}_qc", host=es_host, port=es_port)
+    #     _clean_analysis(id, host=es_host, port=es_port, projects=projects)
+
+    _load_merged_analysis(id, projects, data_directory, es_host, es_port)
+
+
+
+
+
+@main.command()
+@click.argument('data_directory')
+@click.pass_context
+@click.option('--id', help="ID of dashboard", required=True)
+@click.option('--project', 'projects', multiple=True, default=["DLP"], help="Projects to load dashboard into")
+@click.option('--download', is_flag=True, help="Download data")
+@click.option('--reload', is_flag=True, help="Force reload this dashboard")
 def load_dashboard(ctx, data_directory, id, projects, download, reload):
     es_host = ctx.obj['host']
     es_port = ctx.obj["port"]
