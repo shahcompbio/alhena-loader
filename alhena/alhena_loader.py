@@ -128,9 +128,9 @@ def process_qc_fitness_data(data,add_columns):
     del data['order']
     #merge
     data = pd.merge(data, column_df, how="inner", on="temp_cell_id")
-    del data["cell_id_x"]
+    del data["cell_id_y"]
     del data["temp_cell_id"]
-    data = data.rename(columns={'cell_id_y': "cell_id"})
+    data = data.rename(columns={'cell_id_x': "cell_id"})
     print(len(data["order"].unique()))
     return data
 
