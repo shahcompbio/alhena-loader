@@ -65,8 +65,8 @@ def load_analysis(ctx, data_directory, id, projects, reload):
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
 
-    hmmcopy_data = _get_scgenome_colossus_tantalus_data(data_directory)
-    analysis_record = _get_colossus_tantalus_analysis_object(data_directory, dashboard_id)
+    hmmcopy_data = _get_colossus_tantalus_data(data_directory)
+    analysis_record = _get_colossus_tantalus_analysis_object(data_directory, id)
 
     _load_analysis(id,hmmcopy_data,analysis_record, projects, data_directory, es_host, es_port)
 
@@ -220,8 +220,8 @@ def load_analysis_shah(ctx, data_directory, id, projects, download, reload):
     if reload:
         _clean_analysis(id, host=es_host, port=es_port)
 
-    hmmcopy_data = _get_scgenome_colossus_tantalus_data(data_directory)
-    analysis_record = _get_colossus_tantalus_analysis_object(directory, dashboard_id)
+    hmmcopy_data = _get_colossus_tantalus_data(data_directory)
+    analysis_record = _get_colossus_tantalus_analysis_object(data_directory, id)
     _load_analysis(id, hmmcopy_data, analysis_record, projects, data_directory, es_host, es_port)
 
 
