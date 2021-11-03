@@ -1,3 +1,7 @@
+# DEPRECATED
+
+This module is deprecated. Please see the [wiki](https://github.com/shahcompbio/alhena-docker/wiki) for the most recent version
+
 # Alhena Loader
 
 This project contains Elasticsearch loaders for Alhena
